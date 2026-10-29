@@ -123,12 +123,36 @@ input,select { width:100%; padding:11px; border:1px solid #2b4560; border-radius
 </section>
 
 <section class="view" id="residentes">
- <div class="heading"><div><h1>Base de Datos: Residentes</h1><div class="sub">Rostros, placas y chips asignados.</div></div></div>
- <div class="panel"><div class="panelhead"><h2>Registrar Residente</h2></div><div class="body">
+ <div class="heading"><div><h1>Base de Datos: Residentes & Biometría</h1><div class="sub">Captura facial, placas y asignación por torre y apartamento.</div></div></div>
+ <div class="panel"><div class="panelhead"><h2>Nuevo Registro de Residente</h2></div><div class="body">
  <form id="fRes"><div class="formgrid">
- <div class="field"><label>Nombre</label><input name="nombre" required></div><div class="field"><label>Torre</label><input name="torre" required></div>
- <div class="field"><label>Apartamento</label><input name="apto" required></div><div class="field"><label>Placa Vehículo</label><input name="placa"></div>
- </div><button class="btn primary" style="margin-top:10px">Guardar Residente</button></form></div></div>
+ <div class="field"><label>Nombre Completo</label><input name="nombre" required></div>
+ <div class="field"><label>Documento de Identidad</label><input name="documento"></div>
+ <div class="field"><label>Torre</label><input name="torre" required></div>
+ <div class="field"><label>Apartamento</label><input name="apto" required></div>
+ <div class="field"><label>Placa Vehículo</label><input name="placa"></div>
+ <div class="field"><label>Puesto de Parqueo</label><input name="puesto"></div>
+ </div>
+ 
+ <div style="margin-top:20px; border-top:1px solid var(--borde); padding-top:15px;">
+    <label style="margin-bottom:10px;">Captura Biométrica Facial (Cámara)</label>
+    <div style="display:flex; gap:15px; align-items:center; flex-wrap:wrap;">
+        <video id="camaraResidente" autoplay playsinline style="width:200px; height:150px; background:#000; border-radius:8px; border:1px solid var(--borde); object-fit:cover;"></video>
+        <canvas id="canvasResidente" style="display:none;"></canvas>
+        <div style="display:grid; gap:8px;">
+            <button type="button" class="btn" onclick="capturarRostro()">Tomar Fotografía Facial</button>
+            <small id="estadoCaptura" style="color:var(--suave);">Cámara activa. Posicione el rostro.</small>
+        </div>
+        <div id="previewRostro" style="width:100px; height:100px; border-radius:8px; border:1px dashed var(--borde); display:flex; align-items:center; justify-content:center; color:var(--suave); font-size:10px; overflow:hidden;">Sin foto</div>
+    </div>
+ </div>
+ <input type="hidden" name="foto_rostro" id="fotoRostroInput">
+
+ <button class="btn primary" style="margin-top:20px; width:100%;">Guardar y Registrar Residente</button></form></div></div>
+
+ <div class="panel" style="margin-top:20px;"><div class="panelhead"><h2>Residentes Registrados en este Conjunto</h2></div>
+ <div style="overflow:auto"><table><thead><tr><th>FOTO</th><th>NOMBRE</th><th>TORRE / APTO</th><th>PLACA</th><th>DOCUMENTO</th></tr></thead>
+ <tbody id="tablaResidentes"><tr><td colspan="5" class="empty">Cargando residentes...</td></tr></tbody></table></div></div>
 </section>
 
 <section class="view" id="visitantes">
@@ -163,6 +187,7 @@ input,select { width:100%; padding:11px; border:1px solid #2b4560; border-radius
 <script>
 let conjuntoActualId = 1;
 let deferredPrompt;
+let localStream = null;
 
 const esAppEscritorio = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
 
@@ -282,6 +307,32 @@ function simularAnalitica() {
 }
 setInterval(simularAnalitica, 4500);
 
+async function iniciarCamaraResidente() {
+    try {
+        const video = document.getElementById('camaraResidente');
+        if(video && !localStream) {
+            localStream = await navigator.mediaDevices.getUserMedia({ video: { width: 300, height: 225 } });
+            video.srcObject = localStream;
+        }
+    } catch(e) {
+        document.getElementById('estadoCaptura').textContent = "Aviso: No se pudo acceder a la cámara.";
+    }
+}
+
+function capturarRostro() {
+    const video = document.getElementById('camaraResidente');
+    const canvas = document.getElementById('canvasResidente');
+    canvas.width = 200;
+    canvas.height = 150;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const dataUrl = canvas.toDataURL('image/jpeg');
+    
+    document.getElementById('fotoRostroInput').value = dataUrl;
+    document.getElementById('previewRostro').innerHTML = `<img src="${dataUrl}" style="width:100%; height:100%; object-fit:cover;">`;
+    document.getElementById('estadoCaptura').textContent = "Fotografía facial capturada con éxito.";
+}
+
 function go(id){
     if(id === 'camaras' && !esAppEscritorio) {
         alert("Acceso denegado: El circuito cerrado de cámaras solo está disponible en la aplicación instalada.");
@@ -291,6 +342,9 @@ function go(id){
     document.getElementById(id).classList.add("active");
     document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("active",x.dataset.page===id));
     document.getElementById('crumb').textContent=document.querySelector(`[data-page="${id}"]`).textContent.trim();
+    if(id === 'residentes') {
+        iniciarCamaraResidente();
+    }
     window.scrollTo(0,0);
 }
 document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>go(b.dataset.page));
@@ -307,24 +361,73 @@ async function recargar(){
         const [res, movs] = await Promise.all([api("/api/residentes"), api("/api/movimientos")]);
         document.getElementById("movs").innerHTML=movs.length?movs.map(m=>`<tr><td>${m.hora}</td><td>${m.persona}</td><td>${m.tipo}</td><td>${m.evento}</td></tr>`).join(""):'<tr><td colspan="4">Sin registros en este conjunto.</td></tr>';
         document.getElementById("anfitrion").innerHTML='<option value="">Selecciona residente...</option>'+res.map(r=>`<option value="${r.nombre}">${r.nombre} (Torre ${r.torre} - Apto ${r.apto})</option>`).join("");
+        
+        const tablaRes = document.getElementById("tablaResidentes");
+        if(tablaRes) {
+            tablaRes.innerHTML = res.length ? res.map(r => `
+                <tr>
+                    <td>${r.foto_rostro ? `<img src="${r.foto_rostro}" style="width:35px; height:35px; border-radius:50%; object-fit:cover;">` : 'Sin foto'}</td>
+                    <td><b>${r.nombre}</b></td>
+                    <td>Torre ${r.torre} - Apto ${r.apto}</td>
+                    <td>${r.placa || 'N/A'}</td>
+                    <td>${r.documento || 'N/A'}</td>
+                </tr>
+            `).join("") : '<tr><td colspan="5" class="empty">No hay residentes registrados en este conjunto.</td></tr>';
+        }
     } catch(e) { console.error(e); }
 }
 
-document.getElementById("fRes").onsubmit=async e=>{e.preventDefault();try{await api("/api/residentes",{method:"POST",body:JSON.stringify(Object.fromEntries(new FormData(e.target)))} );e.target.reset();recargar();alert("Residente guardado exitosamente");}catch(err){alert(err.message);}};
-document.getElementById("fVis").onsubmit=async e=>{e.preventDefault();try{await api("/api/visitantes",{method:"POST",body:JSON.stringify(Object.fromEntries(new FormData(e.target)))} );e.target.reset();recargar();alert("Acceso peatonal autorizado");}catch(err){alert(err.message);}};
-document.getElementById("fDom").onsubmit=async e=>{e.preventDefault();try{await api("/api/domicilios",{method:"POST",body:JSON.stringify(Object.fromEntries(new FormData(e.target)))} );e.target.reset();recargar();alert("Domiciliario autorizado con éxito");}catch(err){alert(err.message);}};
+document.getElementById("fRes").onsubmit=async e=>{
+    e.preventDefault();
+    try {
+        await api("/api/residentes",{method:"POST",body:JSON.stringify(Object.fromEntries(new FormData(e.target)))});
+        e.target.reset();
+        document.getElementById('fotoRostroInput').value = "";
+        document.getElementById('previewRostro').innerHTML = "Sin foto";
+        recargar();
+        alert("Residente y biometría guardados exitosamente");
+    } catch(err){alert(err.message);}
+};
+
+document.getElementById("fVis").onsubmit=async e=>{
+    e.preventDefault();
+    try {
+        await api("/api/visitantes",{method:"POST",body:JSON.stringify(Object.fromEntries(new FormData(e.target)))});
+        e.target.reset();
+        recargar();
+        alert("Acceso peatonal autorizado");
+    } catch(err){alert(err.message);}
+};
+
+document.getElementById("fDom").onsubmit=async e=>{
+    e.preventDefault();
+    try {
+        await api("/api/domicilios",{method:"POST",body:JSON.stringify(Object.fromEntries(new FormData(e.target)))});
+        e.target.reset();
+        recargar();
+        alert("Domiciliario autorizado con éxito");
+    } catch(err){alert(err.message);}
+};
 
 document.getElementById("fConjunto").onsubmit=async e=>{
     e.preventDefault();
     const data = Object.fromEntries(new FormData(e.target));
     try {
         const r = await fetch('/api/conjuntos', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data)});
-        if(!r.ok) throw new Error("No se pudo crear el conjunto");
+        if(!r.ok) {
+            const errJson = await r.json();
+            throw new Error(errJson.detail || "No se pudo crear el conjunto");
+        }
         const resData = await r.json();
         e.target.reset();
+        
         await cargarConjuntosLogin();
         await cargarConjuntosHeader();
-        alert(`Conjunto creado con éxito.\nCredenciales de acceso asignadas:\nUsuario: admin_${resData.id}\nContraseña: 12345`);
+        
+        const selectLogin = document.getElementById('lConjunto');
+        if(selectLogin) selectLogin.value = resData.id;
+
+        alert(`¡Conjunto "${resData.nombre}" creado con éxito!\n\nUsuario de acceso: admin_${resData.id}\nContraseña: 12345\n\nYa puedes seleccionarlo y entrar.`);
     } catch(err) { alert(err.message); }
 };
 </script>

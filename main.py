@@ -1,145 +1,238 @@
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import HTMLResponse, JSONResponse, Response
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import HTMLResponse, FileResponse
 from pathlib import Path
+from pydantic import BaseModel
+from typing import Optional
 import sqlite3
 
-from app.core.database import conectar_db, inicializar_db, hora_actual, guardar_movimiento
-from app.models.schemas import Residente, Visitante, Domicilio, ConjuntoNuevo, UsuarioLogin, UsuarioNuevo
+app = FastAPI(title="SUPRENAMAR VIGÍA IA", version="2.0")
 
-app = FastAPI(title="SUPRENAMAR - VIGÍA IA Residencial")
+BASE_DIR = Path(__file__).resolve().parent
+DB_PATH = BASE_DIR / "vigia.db"
+
+app.mount("/static", StaticFiles(directory=str(BASE_DIR / "app" / "static")), name="static")
+
+def conectar_db():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+def inicializar_db():
+    with conectar_db() as db:
+        db.execute("""
+            CREATE TABLE IF NOT EXISTS conjuntos (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                nombre TEXT UNIQUE NOT NULL,
+                activo INTEGER DEFAULT 1,
+                creado_en TEXT
+            )
+        """)
+        db.execute("""
+            CREATE TABLE IF NOT EXISTS usuarios (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT UNIQUE NOT NULL,
+                password_hash TEXT NOT NULL,
+                nombre_completo TEXT NOT NULL,
+                rol TEXT NOT NULL,
+                conjunto_id INTEGER,
+                FOREIGN KEY(conjunto_id) REFERENCES conjuntos(id)
+            )
+        """)
+        db.execute("""
+            CREATE TABLE IF NOT EXISTS residentes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                nombre TEXT NOT NULL,
+                documento TEXT,
+                torre TEXT NOT NULL,
+                apto TEXT NOT NULL,
+                placa TEXT,
+                puesto TEXT,
+                foto_rostro TEXT,
+                creado_en TEXT,
+                conjunto_id INTEGER,
+                FOREIGN KEY(conjunto_id) REFERENCES conjuntos(id)
+            )
+        """)
+        db.execute("""
+            CREATE TABLE IF NOT EXISTS visitantes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                nombre TEXT NOT NULL,
+                anfitrion TEXT NOT NULL,
+                tipo TEXT NOT NULL,
+                placa TEXT,
+                hora TEXT,
+                dentro INTEGER DEFAULT 1,
+                conjunto_id INTEGER,
+                FOREIGN KEY(conjunto_id) REFERENCES conjuntos(id)
+            )
+        """)
+        db.execute("""
+            CREATE TABLE IF NOT EXISTS domicilios (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                nombre TEXT NOT NULL,
+                empresa TEXT NOT NULL,
+                torre TEXT NOT NULL,
+                apto TEXT NOT NULL,
+                placa TEXT,
+                hora TEXT,
+                dentro INTEGER DEFAULT 1,
+                conjunto_id INTEGER,
+                FOREIGN KEY(conjunto_id) REFERENCES conjuntos(id)
+            )
+        """)
+        db.execute("""
+            CREATE TABLE IF NOT EXISTS movimientos (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                hora TEXT NOT NULL,
+                persona TEXT NOT NULL,
+                tipo TEXT NOT NULL,
+                evento TEXT NOT NULL,
+                conjunto_id INTEGER,
+                FOREIGN KEY(conjunto_id) REFERENCES conjuntos(id)
+            )
+        """)
+        
+        conjunto = db.execute("SELECT id FROM conjuntos WHERE id=1").fetchone()
+        if not conjunto:
+            db.execute("INSERT INTO conjuntos(id, nombre, activo, creado_en) VALUES(1, 'Conjunto Residencial Principal', 1, datetime('now'))")
+        
+        admin = db.execute("SELECT id FROM usuarios WHERE username='admin'").fetchone()
+        if not admin:
+            db.execute("INSERT INTO usuarios(username, password_hash, nombre_completo, rol, conjunto_id) VALUES('admin', '12345', 'Administrador General', 'admin', 1)")
+            
+        db.commit()
+
 inicializar_db()
 
-templates_dir = Path(__file__).parent / "app" / "templates"
-app.mount("/static", StaticFiles(directory=str(templates_dir)), name="static")
+# Esquemas Pydantic
+class Residente(BaseModel):
+    nombre: str
+    documento: Optional[str] = ""
+    torre: str
+    apto: str
+    placa: Optional[str] = ""
+    puesto: Optional[str] = ""
+    foto_rostro: Optional[str] = ""
+
+class Visitante(BaseModel):
+    nombre: str
+    anfitrion: str
+    tipo: str = "Visitante"
+    placa: Optional[str] = ""
+
+class Domicilio(BaseModel):
+    nombre: str
+    empresa: str
+    torre: str
+    apto: str
+    placa: Optional[str] = ""
+
+class ConjuntoNuevo(BaseModel):
+    nombre: str
+
+class UsuarioLogin(BaseModel):
+    username: str
+    password: str
+    conjunto_id: int
+
+def validar_conjunto(db, conjunto_id: int):
+    c = db.execute("SELECT id FROM conjuntos WHERE id = ?", (conjunto_id,)).fetchone()
+    if not c:
+        raise HTTPException(status_code=404, detail="Conjunto residencial no encontrado")
+
+@app.get("/")
+def read_index():
+    return FileResponse(str(BASE_DIR / "app" / "templates" / "index.html"))
 
 @app.get("/manifest.json")
-def get_manifest():
-    return JSONResponse({
-        "name": "SUPRENAMAR - Seguridad Privada",
-        "short_name": "SUPRENAMAR VIGÍA",
+def manifest():
+    return {
+        "name": "SUPRENAMAR VIGÍA IA",
+        "short_name": "SUPRENAMAR",
         "start_url": "/",
         "display": "standalone",
         "background_color": "#07111f",
         "theme_color": "#0a1727",
-        "icons": [{"src": "/static/logo.png", "sizes": "512x512", "type": "image/png"}]
-    })
-
-@app.get("/sw.js")
-def get_sw():
-    return Response(content="self.addEventListener('install', (e) => self.skipWaiting());", media_type="application/javascript")
-
-@app.post("/api/login")
-def login(data: UsuarioLogin):
-    with conectar_db() as db:
-        user = db.execute("SELECT * FROM usuarios WHERE username=? AND password_hash=? AND conjunto_id=?", 
-                          (data.username, data.password, data.conjunto_id)).fetchone()
-        if user:
-            return {
-                "ok": True, 
-                "token": "sesion-activa", 
-                "rol": user["rol"], 
-                "nombre": user["nombre_completo"],
-                "conjunto_id": user["conjunto_id"]
-            }
-        raise HTTPException(status_code=401, detail="Credenciales incorrectas para este conjunto.")
+        "icons": [{"src": "/static/logo.png", "sizes": "192x192", "type": "image/png"}]
+    }
 
 @app.get("/api/conjuntos")
 def listar_conjuntos():
     with conectar_db() as db:
-        return [dict(r) for r in db.execute("SELECT id, nombre, activo FROM conjuntos WHERE activo=1")]
+        res = db.execute("SELECT id, nombre FROM conjuntos WHERE activo=1").fetchall()
+        return [dict(row) for row in res]
 
 @app.post("/api/conjuntos")
 def crear_conjunto(d: ConjuntoNuevo):
-    try:
-        with conectar_db() as db:
-            cur = db.execute("INSERT INTO conjuntos(nombre, activo, creado_en) VALUES(?,1,?)", (d.nombre.strip(), hora_actual()))
+    with conectar_db() as db:
+        try:
+            cur = db.execute("INSERT INTO conjuntos(nombre, creado_en) VALUES(?, datetime('now'))", (d.nombre.strip(),))
             conjunto_id = cur.lastrowid
-            # Crear usuario por defecto para este nuevo conjunto
-            db.execute("INSERT INTO usuarios(username, password_hash, nombre_completo, rol, conjunto_id) VALUES(?, ?, ?, 'admin', ?)",
-                       (f"admin_{conjunto_id}", "12345", f"Administrador {d.nombre}", conjunto_id))
+            db.execute("INSERT INTO usuarios(username, password_hash, nombre_completo, rol, conjunto_id) VALUES(?, ?, ?, ?, ?)",
+                (f"admin_{conjunto_id}", "12345", f"Administrador {d.nombre.strip()}", "admin", conjunto_id))
             db.commit()
-            return {"id": conjunto_id, "nombre": d.nombre, "activo": 1}
-    except:
-        raise HTTPException(status_code=409, detail="Ya existe un conjunto con este nombre.")
+            return {"id": conjunto_id, "nombre": d.nombre.strip()}
+        except sqlite3.IntegrityError:
+            raise HTTPException(status_code=400, detail="El conjunto ya existe.")
 
-def validar_conjunto(db, conjunto_id):
-    if not db.execute("SELECT id FROM conjuntos WHERE id=? AND activo=1", (conjunto_id,)).fetchone():
-        raise HTTPException(status_code=404, detail="Conjunto no encontrado.")
+@app.post("/api/login")
+def login_sistema(d: UsuarioLogin):
+    with conectar_db() as db:
+        user = db.execute("SELECT * FROM usuarios WHERE username = ? AND conjunto_id = ?", (d.username.strip(), d.conjunto_id)).fetchone()
+        if not user or user["password_hash"] != d.password.strip():
+            raise HTTPException(status_code=401, detail="Credenciales incorrectas o no autorizadas para este conjunto.")
+        return {"mensaje": "Acceso concedido", "nombre": user["nombre_completo"], "rol": user["rol"], "conjunto_id": user["conjunto_id"]}
 
 @app.get("/api/residentes")
 def listar_residentes(conjunto_id: int = 1):
     with conectar_db() as db:
         validar_conjunto(db, conjunto_id)
-        return [dict(r) for r in db.execute("SELECT * FROM residentes WHERE conjunto_id=? ORDER BY id DESC", (conjunto_id,))]
+        res = db.execute("SELECT * FROM residentes WHERE conjunto_id = ? ORDER BY id DESC", (conjunto_id,)).fetchall()
+        return [dict(row) for row in res]
 
 @app.post("/api/residentes")
 def crear_residente(d: Residente, conjunto_id: int = 1):
     with conectar_db() as db:
         validar_conjunto(db, conjunto_id)
-        cur = db.execute("INSERT INTO residentes(nombre,documento,torre,apto,placa,puesto,creado_en,conjunto_id) VALUES(?,?,?,?,?,?,?,?)",
-            (d.nombre.strip(), d.documento.strip(), d.torre, d.apto.strip(), d.placa.strip(), d.puesto.strip(), hora_actual(), conjunto_id))
+        cur = db.execute("INSERT INTO residentes(nombre,documento,torre,apto,placa,puesto,foto_rostro,creado_en,conjunto_id) VALUES(?,?,?,?,?,?,?,?,datetime('now'))",
+            (d.nombre.strip(), d.documento.strip(), d.torre, d.apto.strip(), d.placa.strip(), d.puesto.strip(), d.foto_rostro, conjunto_id))
         db.commit()
         nuevo_id = cur.lastrowid
-    guardar_movimiento(d.nombre.strip(), "Residente", "Registro creado", conjunto_id)
+    
+    with conectar_db() as db:
+        db.execute("INSERT INTO movimientos (hora, persona, tipo, evento, conjunto_id) VALUES (datetime('now', 'localtime'), ?, 'Residente', 'Registro biométrico facial guardado', ?)", (d.nombre.strip(), conjunto_id))
+        db.commit()
+        
     return {"id": nuevo_id, **d.model_dump(), "conjunto_id": conjunto_id}
-
-@app.get("/api/visitantes")
-def listar_visitantes(conjunto_id: int = 1):
-    with conectar_db() as db:
-        validar_conjunto(db, conjunto_id)
-        return [dict(r) for r in db.execute("SELECT * FROM visitantes WHERE conjunto_id=? ORDER BY id DESC", (conjunto_id,))]
-
-@app.post("/api/visitantes")
-def crear_visitante(d: Visitante, conjunto_id: int = 1):
-    with conectar_db() as db:
-        validar_conjunto(db, conjunto_id)
-        if not db.execute("SELECT id FROM residentes WHERE nombre=? AND conjunto_id=?", (d.anfitrion, conjunto_id)).fetchone():
-            raise HTTPException(status_code=400, detail="Residente no existe en este conjunto.")
-        h = hora_actual()
-        cur = db.execute("INSERT INTO visitantes(nombre,anfitrion,tipo,placa,hora,dentro,conjunto_id) VALUES(?,?,?,?,?,1,?)",
-            (d.nombre.strip(), d.anfitrion, d.tipo, d.placa.strip(), h, conjunto_id))
-        db.commit()
-        nuevo_id = cur.lastrowid
-    guardar_movimiento(d.nombre.strip(), d.tipo, "Entrada registrada", conjunto_id)
-    return {"id": nuevo_id, "nombre": d.nombre, "anfitrion": d.anfitrion, "tipo": d.tipo, "placa": d.placa, "hora": h, "dentro": 1, "conjunto_id": conjunto_id}
-
-@app.post("/api/visitantes/{item_id}/salida")
-def salida_visitante(item_id: int, conjunto_id: int = 1):
-    with conectar_db() as db:
-        validar_conjunto(db, conjunto_id)
-        r = db.execute("SELECT nombre,tipo,dentro FROM visitantes WHERE id=? AND conjunto_id=?", (item_id, conjunto_id)).fetchone()
-        if r and r["dentro"]:
-            db.execute("UPDATE visitantes SET dentro=0 WHERE id=? AND conjunto_id=?", (item_id, conjunto_id))
-            db.commit()
-    if r and r["dentro"]:
-        guardar_movimiento(r["nombre"], r["tipo"], "Salida registrada", conjunto_id)
-    return {"ok": True}
-
-@app.get("/api/domicilios")
-def listar_domicilios(conjunto_id: int = 1):
-    with conectar_db() as db:
-        validar_conjunto(db, conjunto_id)
-        return [dict(r) for r in db.execute("SELECT * FROM domicilios WHERE conjunto_id=? ORDER BY id DESC", (conjunto_id,))]
-
-@app.post("/api/domicilios")
-def crear_domicilio(d: Domicilio, conjunto_id: int = 1):
-    with conectar_db() as db:
-        validar_conjunto(db, conjunto_id)
-        h = hora_actual()
-        cur = db.execute("INSERT INTO domicilios(nombre,empresa,torre,apto,placa,hora,dentro,conjunto_id) VALUES(?,?,?,?,?,?,1,?)",
-            (d.nombre.strip(), d.empresa.strip(), d.torre, d.apto.strip(), d.placa.strip(), h, conjunto_id))
-        db.commit()
-    guardar_movimiento(d.nombre.strip(), "Domiciliario", f"Ingreso a Torre {d.torre} Apto {d.apto}", conjunto_id)
-    return {"ok": True}
 
 @app.get("/api/movimientos")
 def listar_movimientos(conjunto_id: int = 1):
     with conectar_db() as db:
         validar_conjunto(db, conjunto_id)
-        return [dict(r) for r in db.execute("SELECT * FROM movimientos WHERE conjunto_id=? ORDER BY id DESC LIMIT 100", (conjunto_id,))]
+        res = db.execute("SELECT * FROM movimientos WHERE conjunto_id = ? ORDER BY id DESC LIMIT 30", (conjunto_id,)).fetchall()
+        return [dict(row) for row in res]
 
-@app.get("/", response_class=HTMLResponse)
-def inicio():
-    ruta_html = templates_dir / "index.html"
-    return ruta_html.read_text(encoding="utf-8")
+@app.post("/api/visitantes")
+def crear_visitante(d: Visitante, conjunto_id: int = 1):
+    with conectar_db() as db:
+        validar_conjunto(db, conjunto_id)
+        db.execute("INSERT INTO visitantes(nombre,anfitrion,tipo,placa,hora,conjunto_id) VALUES(?,?,?,?,datetime('now', 'localtime'),?)",
+            (d.nombre.strip(), d.anfitrion, d.tipo, d.placa.strip(), conjunto_id))
+        db.commit()
+    with conectar_db() as db:
+        db.execute("INSERT INTO movimientos (hora, persona, tipo, evento, conjunto_id) VALUES (datetime('now', 'localtime'), ?, 'Visitante', 'Ingreso autorizado a ' || ?, ?)", (d.nombre.strip(), d.anfitrion, conjunto_id))
+        db.commit()
+    return {"status": "ok"}
+
+@app.post("/api/domicilios")
+def crear_domicilio(d: Domicilio, conjunto_id: int = 1):
+    with conectar_db() as db:
+        validar_conjunto(db, conjunto_id)
+        db.execute("INSERT INTO domicilios(nombre,empresa,torre,apto,placa,hora,conjunto_id) VALUES(?,?,?,?,?,datetime('now', 'localtime'),?)",
+            (d.nombre.strip(), d.empresa.strip(), d.torre, d.apto.strip(), d.placa.strip(), conjunto_id))
+        db.commit()
+    with conectar_db() as db:
+        db.execute("INSERT INTO movimientos (hora, persona, tipo, evento, conjunto_id) VALUES (datetime('now', 'localtime'), ?, 'Domiciliario', 'Ruta autorizada Torre ' || ?, ?)", (d.nombre.strip(), d.torre, conjunto_id))
+        db.commit()
+    return {"status": "ok"}
