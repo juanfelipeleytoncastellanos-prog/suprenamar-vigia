@@ -312,7 +312,7 @@ async function recargar(){
 
 document.getElementById("fRes").onsubmit=async e=>{e.preventDefault();try{await api("/api/residentes",{method:"POST",body:JSON.stringify(Object.fromEntries(new FormData(e.target)))} );e.target.reset();recargar();alert("Residente guardado exitosamente");}catch(err){alert(err.message);}};
 document.getElementById("fVis").onsubmit=async e=>{e.preventDefault();try{await api("/api/visitantes",{method:"POST",body:JSON.stringify(Object.fromEntries(new FormData(e.target)))} );e.target.reset();recargar();alert("Acceso peatonal autorizado");}catch(err){alert(err.message);}};
-document.getElementById("fDom").onsubmit=async e=>{e.preventDefault();try{await api("/api/domicilios",{method:"POST",body:JSON.stringify(Object.fromEntries(e.target)))} );e.target.reset();recargar();alert("Domiciliario autorizado con éxito");}catch(err){alert(err.message);}};
+document.getElementById("fDom").onsubmit=async e=>{e.preventDefault();try{await api("/api/domicilios",{method:"POST",body:JSON.stringify(Object.fromEntries(new FormData(e.target)))} );e.target.reset();recargar();alert("Domiciliario autorizado con éxito");}catch(err){alert(err.message);}};
 
 document.getElementById("fConjunto").onsubmit=async e=>{
     e.preventDefault();
