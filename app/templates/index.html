@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SUPRENAMAR - Portal de Descarga PC</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#0a1727">
+<link rel="apple-touch-icon" href="/static/logo.png">
+<style>
+:root { --fondo:#07111f; --panel:#101f33; --borde:#263e59; --azul:#4db6ff; --texto:#edf5ff; --suave:#91a8c2; --verde:#42d6a0; --amarillo:#ffc857; --rojo:#ff5e5e; }
+* { box-sizing:border-box } body { margin:0; background:var(--fondo); color:var(--texto); font-family:Segoe UI,Arial,sans-serif }
+button { cursor:pointer; color:inherit; font:inherit }
+.app { display:grid; grid-template-columns:225px 1fr; min-height:100vh }
+aside { background:#091625; padding:22px 13px; border-right:1px solid var(--borde) }
+.logo-box { display:flex; align-items:center; gap:10px; padding:6px 9px 20px; border-bottom:1px solid var(--borde); margin-bottom:15px; }
+.logo-box img { width:42px; height:42px; object-fit:contain; filter: drop-shadow(0 0 5px rgba(77,182,255,0.4)); }
+.logo { font-weight:800; font-size:16px; line-height: 1.1; } .logo span { color:var(--azul) } .logo small { display:block; color:var(--suave); font-size:9px; margin-top:3px }
+nav { display:grid; gap:7px; margin-top:10px }
+nav button { text-align:left; padding:13px; background:transparent; border:1px solid transparent; border-radius:9px; color:#afc2d8 }
+nav button:hover,nav button.active { background:#14345a; border-color:#275581; color:white }
+nav button span { display:inline-block; width:25px; color:var(--azul) }
+header { height:68px; display:flex; align-items:center; justify-content:space-between; padding:0 27px; background:#0a1727; border-bottom:1px solid var(--borde) }
+header small { color:var(--suave) } header strong { color:var(--azul) }
+main > .content { max-width:1550px; margin:auto; padding:25px }
+.heading { display:flex; justify-content:space-between; align-items:center; gap:15px; margin-bottom:22px }
+h1 { font-size:27px; margin:0 } h2 { font-size:15px; margin:0 } .sub { color:var(--suave); font-size:12px; margin-top:7px }
+.btn { background:#142943; border:1px solid #31506f; padding:10px 13px; border-radius:8px; font-size:12px }
+.primary { background:#167ec5; border-color:#3d9fe8 }
+.cards { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:13px; margin-bottom:18px }
+.card,.panel { background:var(--panel); border:1px solid var(--borde); border-radius:12px; overflow:hidden }
+.card { padding:17px } .card small { color:var(--suave) } .num { font-size:29px; font-weight:800; margin:12px 0 5px }
+.panelhead { display:flex; align-items:center; justify-content:space-between; padding:15px 17px; border-bottom:1px solid var(--borde); gap:10px }
+.body { padding:16px }
+.twocol { display:grid; grid-template-columns:1.15fr 1fr; gap:16px; margin-bottom:17px }
+.cameras { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:11px }
+.camera { height:155px; position:relative; overflow:hidden; border-radius:9px; border:1px solid #35516b; cursor:pointer; background:#172d3c; display:flex; align-items:center; justify-content:center; }
+.camera:hover { border-color: var(--azul); }
+.camlabel { position:absolute; top:9px; left:9px; padding:5px 7px; background:#06101ddc; border-radius:5px; font-size:10px }
+.camstatus { position:absolute; top:10px; right:9px; color:#7affc6; font-size:9px; display:flex; align-items:center; gap:4px; }
+.pulse { width:6px; height:6px; background:var(--rojo); border-radius:50%; animation: pulse 1.5s infinite; }
+@keyframes pulse { 0% { box-shadow:0 0 0 0 rgba(255,94,94,0.7); } 70% { box-shadow:0 0 0 6px rgba(255,94,94,0); } 100% { box-shadow:0 0 0 0 rgba(255,94,94,0); } }
+.view { display:none }.view.active { display:block }
+table { border-collapse:collapse; width:100%; font-size:12px }
+th,td { padding:12px 10px; border-bottom:1px solid #23384f; text-align:left } th { color:var(--suave); font-weight:600 } td { color:#d9e6f5 }
+.empty { color:var(--suave); padding:24px; text-align:center }
+.formgrid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:13px }
+label { display:block; color:#9bb3cd; font-size:12px; margin-bottom:6px }
+input,select { width:100%; padding:11px; border:1px solid #2b4560; border-radius:8px; background:#091625; color:white }
+#iaFeed div { padding: 8px; border-bottom: 1px solid #1a2c42; animation: fadeIn 0.5s; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+</head>
+<body>
+
+<!-- PANTALLA EXCLUSIVA DE DESCARGA Y ACCESO A PC -->
+<div id="loginScreen" style="position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(rgba(7,17,31,0.92), rgba(7,17,31,0.95)), url('/static/logo.png');background-size:cover;background-position:center;z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;">
+   <div class="panel" style="width:100%;max-width:500px;padding:35px;border-color:var(--amarillo);box-shadow: 0 0 40px rgba(255,200,87,0.15);text-align:center;">
+       <img src="/static/logo.png" style="width:90px;height:90px;object-fit:contain;margin-bottom:10px;filter:drop-shadow(0 0 10px rgba(255,200,87,0.5))">
+       <h2 style="margin-bottom:5px;color:var(--azul);font-size:24px;">SUPRENAMAR</h2>
+       <p style="color:var(--suave);font-size:11px;margin-top:0;margin-bottom:20px;letter-spacing:1px;">SEGURIDAD PRIVADA · CENTRO DE DESCARGAS PC</p>
+       
+       <div style="background:#091625; padding:18px; border-radius:8px; border:1px solid var(--borde); text-align:left; margin-bottom:25px;">
+           <b style="color:var(--amarillo); font-size:13px;">Instrucciones de Instalación en Computador:</b>
+           <p style="font-size:12px; color:var(--suave); margin:8px 0 0; line-height:1.6;">
+               1. Haz clic en el botón de abajo para iniciar el sistema.<br>
+               2. En tu navegador (Chrome o Edge), ve a la barra superior y haz clic en el ícono de monitor con flecha o en el menú superior derecho y selecciona <b>"Instalar aplicación..."</b>.
+           </p>
+       </div>
+
+       <button id="installAppBtn" class="btn primary" style="width:100%; padding:14px; font-size:14px; margin-bottom:12px; display:none; background:#28a745; border-color:#34d058;">Instalar Aplicación de Escritorio</button>
+       
+       <button onclick="entrarAlSistema()" class="btn primary" style="width:100%; padding:14px; font-size:14px;">Entrar al Sistema VIGÍA IA</button>
+   </div>
+</div>
+
+<div class="app">
+<aside>
+ <div class="logo-box">
+    <img src="/static/logo.png" alt="Suprenamar">
+    <div class="logo">SUPRENAMAR<small>VIGÍA IA SECURITY</small></div>
+ </div>
+ <nav>
+  <button class="active" data-page="inicio"><span>▦</span>Panel principal</button>
+  <button data-page="camaras"><span>▣</span>Cámaras (En Vivo)</button>
+  <button data-page="residentes"><span>♙</span>Residentes & Biometría</button>
+  <button data-page="visitantes"><span>♧</span>Acceso Peatonal</button>
+  <button data-page="domicilios"><span>▤</span>Domiciliarios</button>
+ </nav>
+</aside>
+<main>
+<header><small>SUPRENAMAR / <strong id="crumb">Panel principal</strong></small>
+<div style="display:flex;align-items:center;gap:10px"><select id="conjuntoSelect" style="max-width:200px"><option value="1">Conjunto principal</option></select><strong id="guardName" style="color:var(--verde);">OPERADOR SUPRENAMAR</strong></div></header>
+<div class="content">
+
+<section class="view active" id="inicio">
+ <div class="heading"><div><h1>Centro de control inteligente</h1><div class="sub">Visión 24/7 y gestión de accesos corporativos</div></div>
+ <button class="btn primary" onclick="go('visitantes')">+ Autorizar Ingreso</button></div>
+ 
+ <div class="twocol">
+  <div class="panel" style="border-color: var(--amarillo);">
+   <div class="panelhead"><h2>Monitoreo IA en Vivo</h2><small>Detección de Movimiento por Torre/Piso</small></div>
+   <div class="body" id="iaFeed" style="height: 330px; overflow-y: auto; font-family: monospace; font-size: 12px; background:#060d16; padding:0;">
+       <div style="color: var(--suave);">[SUPRENAMAR AI] Red neuronal activada... OK.</div>
+       <div style="color: var(--suave);">[SISTEMA] Enlace RTSP seguro establecido... OK.</div>
+   </div>
+  </div>
+  
+  <div class="panel"><div class="panelhead"><h2>Vistas Cámaras Principales</h2><small>Transmisión Directa</small></div>
+   <div class="body"><div class="cameras" id="cams"></div></div></div>
+ </div>
+ <div class="panel"><div class="panelhead"><h2>Movimientos recientes (Torniquete/Barrera)</h2></div>
+ <div style="overflow:auto"><table><thead><tr><th>HORA</th><th>PERSONA / PLACA</th><th>TIPO</th><th>EVENTO</th></tr></thead>
+ <tbody id="movs"><tr><td colspan="4" class="empty">No hay movimientos.</td></tr></tbody></table></div></div>
+</section>
+
+<section class="view" id="camaras">
+ <div class="heading"><div><h1>Circuito Cerrado (CCTV)</h1><div class="sub">Transmisión en vivo y audio bidireccional activo. Clic para pantalla completa.</div></div></div>
+ <div class="panel"><div class="body"><div class="cameras" style="grid-template-columns:repeat(3,1fr);" id="camsAll"></div></div></div>
+</section>
+
+<section class="view" id="residentes">
+ <div class="heading"><div><h1>Base de Datos: Residentes</h1><div class="sub">Rostros, placas y chips asignados.</div></div></div>
+ <div class="panel"><div class="panelhead"><h2>Registrar Residente</h2></div><div class="body">
+ <form id="fRes"><div class="formgrid">
+ <div class="field"><label>Nombre</label><input name="nombre" required></div><div class="field"><label>Torre</label><input name="torre" required></div>
+ <div class="field"><label>Apartamento</label><input name="apto" required></div><div class="field"><label>Placa Vehículo</label><input name="placa"></div>
+ </div><button class="btn primary" style="margin-top:10px">Guardar</button></form></div></div>
+</section>
+
+<section class="view" id="visitantes">
+ <div class="heading"><div><h1>Acceso Peatonal y Visitantes</h1></div></div>
+ <div class="panel"><div class="panelhead"><h2>Autorizar Entrada</h2></div><div class="body">
+ <form id="fVis"><div class="formgrid">
+ <div class="field"><label>Visitante</label><input name="nombre" required></div>
+ <div class="field"><label>Residente que autoriza</label><select name="anfitrion" id="anfitrion" required><option value="">Cargando...</option></select></div>
+ </div><button class="btn primary" style="margin-top:10px">Abrir Torniquete</button></form></div></div>
+</section>
+
+<section class="view" id="domicilios">
+ <div class="heading"><div><h1>Control de Domiciliarios</h1></div></div>
+ <div class="panel"><div class="panelhead"><h2>Registrar Rappi/Mensajero</h2></div><div class="body">
+ <form id="fDom"><div class="formgrid">
+ <div class="field"><label>Nombre Mensajero</label><input name="nombre" required></div>
+ <div class="field"><label>Torre Destino</label><input name="torre" required></div>
+ <div class="field"><label>Apartamento</label><input name="apto" required></div>
+ </div><button class="btn primary" style="margin-top:10px">Autorizar Ruta</button></form></div></div>
+</section>
+
+</div></main></div>
+<script>
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    document.getElementById('installAppBtn').style.display = 'block';
+});
+
+document.getElementById('installAppBtn').addEventListener('click', async () => {
+    if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        deferredPrompt = null;
+        document.getElementById('installAppBtn').style.display = 'none';
+    }
+});
+
+function entrarAlSistema() {
+    document.getElementById('loginScreen').style.display = 'none';
+    recargar();
+}
+
+const camNames=["Torre A - Lobby","Torre B - Ascensores","Entrada Peatonal","Parqueadero Sótano 1","Perímetro Norte","Torre C - Pasillo 3"];
+function camera(n,i){return `<div class="camera" onclick="ampliar('${n}')"><div style="text-align:center;color:var(--suave)"><span>Circuito Cerrado</span><br>RTSP H.265<br>En vivo</div><div class="camlabel">${n}</div><div class="camstatus"><span>REC</span></div><div class="camfoot">Micrófono activo</div></div>`}
+cams.innerHTML=camNames.slice(0,4).map(camera).join("");
+camsAll.innerHTML=camNames.map(camera).join("");
+function ampliar(n){alert(`Transmitiendo audio bidireccional a [${n}].\nMicrófono del guardia activado.`)}
+
+function hora(){return new Date().toLocaleTimeString("es-CO",{hour:"2-digit",minute:"2-digit",second:"2-digit"})}
+function logIA(msg, color="var(--texto)") {
+    const d = document.createElement("div");
+    d.style.color = color;
+    d.innerHTML = `<b>[${hora()}]</b> ${msg}`;
+    const container = document.getElementById("iaFeed");
+    container.prepend(d);
+    if(container.children.length > 30) container.lastChild.remove();
+}
+function simularAnalitica() {
+    const torres = ["Torre A", "Torre B", "Torre C", "Torre D"];
+    const pisos = ["Piso 1", "Piso 4", "Piso 8", "Sótano Parqueadero"];
+    const eventos = [
+        {t: "NORMAL:", m: "Persona detectada caminando en pasillo.", c: "var(--suave)"},
+        {t: "LPR/PLACA:", m: "Vehículo autorizado cruzando barrera.", c: "var(--verde)"},
+        {t: "ALERTA:", m: "Movimiento inusual / Permanencia prolongada.", c: "var(--amarillo)"},
+        {t: "PELIGRO:", m: "Domiciliario detectado en TORRE INCORRECTA.", c: "var(--rojo)"},
+        {t: "BIOMETRÍA:", m: "Rostro validado. Puerta abierta.", c: "var(--azul)"}
+    ];
+    const t = torres[Math.floor(Math.random()*torres.length)];
+    const p = pisos[Math.floor(Math.random()*pisos.length)];
+    const ev = eventos[Math.floor(Math.random()*eventos.length)];
+    logIA(`<b>${t} - ${p}</b>: ${ev.t} ${ev.m}`, ev.c);
+}
+setInterval(simularAnalitica, 4500);
+
+function go(id){document.querySelectorAll(".view").forEach(x=>x.classList.remove("active"));document.getElementById(id).classList.add("active");document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("active",x.dataset.page===id));document.getElementById('crumb').textContent=document.querySelector(`[data-page="${id}"]`).textContent.trim();window.scrollTo(0,0)}
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>go(b.dataset.page));
+async function api(url,options={}){const sep=url.includes("?")?"&":"?";const r=await fetch(url.startsWith("/api/conjuntos")?url:url+sep+"conjunto_id=1",{headers:{"Content-Type":"application/json"},...options});return r.json()}
+async function recargar(){
+    const [res, movs] = await Promise.all([api("/api/residentes"), api("/api/movimientos")]);
+    document.getElementById("movs").innerHTML=movs.length?movs.map(m=>`<tr><td>${m.hora}</td><td>${m.persona}</td><td>${m.tipo}</td><td>${m.evento}</td></tr>`).join(""):'<tr><td colspan="4">Sin registros.</td></tr>';
+    document.getElementById("anfitrion").innerHTML='<option value="">Selecciona...</option>'+res.map(r=>`<option value="${r.nombre}">${r.nombre} (${r.torre} ${r.apto})</option>`).join("");
+}
+document.getElementById("fRes").onsubmit=async e=>{e.preventDefault();await api("/api/residentes",{method:"POST",body:JSON.stringify(Object.fromEntries(new FormData(e.target)))});e.target.reset();recargar();alert("Guardado en Base de Datos");};
+document.getElementById("fVis").onsubmit=async e=>{e.preventDefault();await api("/api/visitantes",{method:"POST",body:JSON.stringify(Object.fromEntries(new FormData(e.target)))});e.target.reset();recargar();};
+document.getElementById("fDom").onsubmit=async e=>{e.preventDefault();await api("/api/domicilios",{method:"POST",body:JSON.stringify(Object.fromEntries(new FormData(e.target)))});e.target.reset();recargar();};
+</script>
+</body>
+</html>
