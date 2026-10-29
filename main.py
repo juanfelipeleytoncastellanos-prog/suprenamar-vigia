@@ -105,7 +105,6 @@ def inicializar_db():
 
 inicializar_db()
 
-# Esquemas Pydantic limpios
 class Residente(BaseModel):
     nombre: str
     documento: Optional[str] = ""
