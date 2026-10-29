@@ -1,32 +1,38 @@
 from pydantic import BaseModel
 from typing import Optional
 
-class UsuarioLogin(BaseModel):
-    username: str
-    password: str
-
 class Residente(BaseModel):
     nombre: str
-    documento: str = ""
+    documento: Optional[str] = ""
     torre: str
     apto: str
-    placa: str = ""
-    puesto: str = ""
-    foto_url: Optional[str] = ""
-    chip_rfid: Optional[str] = ""
+    placa: Optional[str] = ""
+    puesto: Optional[str] = ""
 
 class Visitante(BaseModel):
     nombre: str
     anfitrion: str
-    tipo: str = "Peatonal"
-    placa: str = ""
+    tipo: str = "Visitante"
+    placa: Optional[str] = ""
 
 class Domicilio(BaseModel):
     nombre: str
-    empresa: str = ""
+    empresa: str
     torre: str
     apto: str
-    placa: str = ""
+    placa: Optional[str] = ""
 
 class ConjuntoNuevo(BaseModel):
     nombre: str
+
+class UsuarioLogin(BaseModel):
+    username: str
+    password: str
+    conjunto_id: int
+
+class UsuarioNuevo(BaseModel):
+    username: str
+    password: str
+    nombre_completo: str
+    rol: str = "guardia"
+    conjunto_id: int
