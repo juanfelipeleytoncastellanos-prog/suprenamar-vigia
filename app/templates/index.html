@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SUPRENAMAR - Portal de Descarga PC</title>
+<title>SUPRENAMAR - Seguridad Privada e Inteligencia Artificial</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#0a1727">
 <link rel="apple-touch-icon" href="/static/logo.png">
@@ -38,8 +38,6 @@ h1 { font-size:27px; margin:0 } h2 { font-size:15px; margin:0 } .sub { color:var
 .camera:hover { border-color: var(--azul); }
 .camlabel { position:absolute; top:9px; left:9px; padding:5px 7px; background:#06101ddc; border-radius:5px; font-size:10px }
 .camstatus { position:absolute; top:10px; right:9px; color:#7affc6; font-size:9px; display:flex; align-items:center; gap:4px; }
-.pulse { width:6px; height:6px; background:var(--rojo); border-radius:50%; animation: pulse 1.5s infinite; }
-@keyframes pulse { 0% { box-shadow:0 0 0 0 rgba(255,94,94,0.7); } 70% { box-shadow:0 0 0 6px rgba(255,94,94,0); } 100% { box-shadow:0 0 0 0 rgba(255,94,94,0); } }
 .view { display:none }.view.active { display:block }
 table { border-collapse:collapse; width:100%; font-size:12px }
 th,td { padding:12px 10px; border-bottom:1px solid #23384f; text-align:left } th { color:var(--suave); font-weight:600 } td { color:#d9e6f5 }
@@ -53,24 +51,26 @@ input,select { width:100%; padding:11px; border:1px solid #2b4560; border-radius
 </head>
 <body>
 
-<!-- PANTALLA EXCLUSIVA DE DESCARGA Y ACCESO A PC -->
+<!-- PANTALLA DE LOGIN CON SELECCIÓN DE CONJUNTO Y CONTRASEÑA -->
 <div id="loginScreen" style="position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(rgba(7,17,31,0.92), rgba(7,17,31,0.95)), url('/static/logo.png');background-size:cover;background-position:center;z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;">
-   <div class="panel" style="width:100%;max-width:500px;padding:35px;border-color:var(--amarillo);box-shadow: 0 0 40px rgba(255,200,87,0.15);text-align:center;">
+   <div class="panel" style="width:100%;max-width:400px;padding:35px;border-color:var(--azul);box-shadow: 0 0 40px rgba(77,182,255,0.2);text-align:center;">
        <img src="/static/logo.png" style="width:90px;height:90px;object-fit:contain;margin-bottom:10px;filter:drop-shadow(0 0 10px rgba(255,200,87,0.5))">
        <h2 style="margin-bottom:5px;color:var(--azul);font-size:24px;">SUPRENAMAR</h2>
-       <p style="color:var(--suave);font-size:11px;margin-top:0;margin-bottom:20px;letter-spacing:1px;">SEGURIDAD PRIVADA · CENTRO DE DESCARGAS PC</p>
+       <p style="color:var(--suave);font-size:11px;margin-top:0;margin-bottom:20px;letter-spacing:1px;">SEGURIDAD PRIVADA · ACCESO POR CONJUNTO</p>
        
-       <div style="background:#091625; padding:18px; border-radius:8px; border:1px solid var(--borde); text-align:left; margin-bottom:25px;">
-           <b style="color:var(--amarillo); font-size:13px;">Instrucciones de Instalación en Computador:</b>
-           <p style="font-size:12px; color:var(--suave); margin:8px 0 0; line-height:1.6;">
-               1. Haz clic en el botón de abajo para iniciar el sistema.<br>
-               2. En tu navegador (Chrome o Edge), ve a la barra superior y haz clic en el ícono de monitor con flecha o en el menú superior derecho y selecciona <b>"Instalar aplicación..."</b>.
-           </p>
-       </div>
+       <form id="fLogin" style="text-align:left;">
+           <div class="field">
+               <label>Seleccionar Conjunto</label>
+               <select id="lConjunto" required style="margin-bottom:12px;"><option value="">Cargando conjuntos...</option></select>
+           </div>
+           <div class="field"><label>Usuario</label><input id="lUser" placeholder="Ej: admin" required></div>
+           <div class="field" style="margin-top:12px"><label>Contraseña</label><input type="password" id="lPass" placeholder="Contraseña de acceso" required></div>
+           <button type="submit" class="btn primary" style="width:100%;margin-top:22px;font-size:14px;padding:12px;">Iniciar Turno Segurizado</button>
+       </form>
 
-       <button id="installAppBtn" class="btn primary" style="width:100%; padding:14px; font-size:14px; margin-bottom:12px; display:none; background:#28a745; border-color:#34d058;">Instalar Aplicación de Escritorio</button>
-       
-       <button onclick="entrarAlSistema()" class="btn primary" style="width:100%; padding:14px; font-size:14px;">Entrar al Sistema VIGÍA IA</button>
+       <div style="margin-top:18px; border-top:1px solid var(--borde); padding-top:12px;">
+           <button id="installAppBtn" class="btn" style="width:100%; background:#091625; border-color:var(--amarillo); color:var(--amarillo); display:none;">Instalar Aplicación de Escritorio</button>
+       </div>
    </div>
 </div>
 
@@ -82,15 +82,19 @@ input,select { width:100%; padding:11px; border:1px solid #2b4560; border-radius
  </div>
  <nav>
   <button class="active" data-page="inicio"><span>▦</span>Panel principal</button>
-  <button data-page="camaras"><span>▣</span>Cámaras (En Vivo)</button>
+  <button data-page="camaras" id="navCamarasBtn"><span>▣</span>Cámaras (En Vivo)</button>
   <button data-page="residentes"><span>♙</span>Residentes & Biometría</button>
   <button data-page="visitantes"><span>♧</span>Acceso Peatonal</button>
   <button data-page="domicilios"><span>▤</span>Domiciliarios</button>
+  <button data-page="conjuntos"><span>⚙</span>Gestión de Conjuntos</button>
  </nav>
 </aside>
 <main>
 <header><small>SUPRENAMAR / <strong id="crumb">Panel principal</strong></small>
-<div style="display:flex;align-items:center;gap:10px"><select id="conjuntoSelect" style="max-width:200px"><option value="1">Conjunto principal</option></select><strong id="guardName" style="color:var(--verde);">OPERADOR SUPRENAMAR</strong></div></header>
+<div style="display:flex;align-items:center;gap:15px">
+ <select id="conjuntoSelect" style="max-width:220px; background:#07111f;" onchange="cambiarConjuntoHeader()"><option value="1">Cargando...</option></select>
+ <strong id="guardName" style="color:var(--verde);">OPERADOR</strong>
+</div></header>
 <div class="content">
 
 <section class="view active" id="inicio">
@@ -106,7 +110,8 @@ input,select { width:100%; padding:11px; border:1px solid #2b4560; border-radius
    </div>
   </div>
   
-  <div class="panel"><div class="panelhead"><h2>Vistas Cámaras Principales</h2><small>Transmisión Directa</small></div>
+  <!-- CAMARAS EN EL PANEL PRINCIPAL: SE OCULTAN SI ESTÁ EN LA WEB -->
+  <div class="panel" id="panelCamarasWeb"><div class="panelhead"><h2>Vistas Cámaras Principales</h2><small id="estadoAccesoCams">Transmisión Directa</small></div>
    <div class="body"><div class="cameras" id="cams"></div></div></div>
  </div>
  <div class="panel"><div class="panelhead"><h2>Movimientos recientes (Torniquete/Barrera)</h2></div>
@@ -114,8 +119,9 @@ input,select { width:100%; padding:11px; border:1px solid #2b4560; border-radius
  <tbody id="movs"><tr><td colspan="4" class="empty">No hay movimientos.</td></tr></tbody></table></div></div>
 </section>
 
+<!-- SECCIÓN DE CÁMARAS DEDICADA -->
 <section class="view" id="camaras">
- <div class="heading"><div><h1>Circuito Cerrado (CCTV)</h1><div class="sub">Transmisión en vivo y audio bidireccional activo. Clic para pantalla completa.</div></div></div>
+ <div class="heading"><div><h1>Circuito Cerrado (CCTV)</h1><div class="sub">Transmisión en vivo y audio bidireccional activo.</div></div></div>
  <div class="panel"><div class="body"><div class="cameras" style="grid-template-columns:repeat(3,1fr);" id="camsAll"></div></div></div>
 </section>
 
@@ -125,7 +131,7 @@ input,select { width:100%; padding:11px; border:1px solid #2b4560; border-radius
  <form id="fRes"><div class="formgrid">
  <div class="field"><label>Nombre</label><input name="nombre" required></div><div class="field"><label>Torre</label><input name="torre" required></div>
  <div class="field"><label>Apartamento</label><input name="apto" required></div><div class="field"><label>Placa Vehículo</label><input name="placa"></div>
- </div><button class="btn primary" style="margin-top:10px">Guardar</button></form></div></div>
+ </div><button class="btn primary" style="margin-top:10px">Guardar Residente</button></form></div></div>
 </section>
 
 <section class="view" id="visitantes">
@@ -133,23 +139,37 @@ input,select { width:100%; padding:11px; border:1px solid #2b4560; border-radius
  <div class="panel"><div class="panelhead"><h2>Autorizar Entrada</h2></div><div class="body">
  <form id="fVis"><div class="formgrid">
  <div class="field"><label>Visitante</label><input name="nombre" required></div>
- <div class="field"><label>Residente que autoriza</label><select name="anfitrion" id="anfitrion" required><option value="">Cargando...</option></select></div>
+ <div class="field"><label>Residente que autoriza</label><select name="anfitrion" id="anfitrion" required><option value="">Cargando residentes...</option></select></div>
  </div><button class="btn primary" style="margin-top:10px">Abrir Torniquete</button></form></div></div>
 </section>
 
 <section class="view" id="domicilios">
  <div class="heading"><div><h1>Control de Domiciliarios</h1></div></div>
- <div class="panel"><div class="panelhead"><h2>Registrar Rappi/Mensajero</h2></div><div class="body">
+ <div class="panel"><div class="panelhead"><h2>Registrar Mensajero / Rappi</h2></div><div class="body">
  <form id="fDom"><div class="formgrid">
  <div class="field"><label>Nombre Mensajero</label><input name="nombre" required></div>
+ <div class="field"><label>Empresa</label><input name="empresa" required placeholder="Ej: Rappi / Inter Rapidísimo"></div>
  <div class="field"><label>Torre Destino</label><input name="torre" required></div>
  <div class="field"><label>Apartamento</label><input name="apto" required></div>
- </div><button class="btn primary" style="margin-top:10px">Autorizar Ruta</button></form></div></div>
+ </div><button class="btn primary" style="margin-top:10px">Autorizar Ruta Domiciliario</button></form></div></div>
+</section>
+
+<section class="view" id="conjuntos">
+ <div class="heading"><div><h1>Gestión de Conjuntos Residenciales</h1><div class="sub">Crea nuevos conjuntos. Cada uno generará automáticamente su propio acceso con contraseña independiente.</div></div></div>
+ <div class="panel" style="margin-bottom:20px;"><div class="panelhead"><h2>Registrar Nuevo Conjunto</h2></div><div class="body">
+ <form id="fConjunto"><div class="formgrid">
+ <div class="field"><label>Nombre del Conjunto Residencial</label><input name="nombre" placeholder="Ej: Conjunto Reservas del Bosque" required></div>
+ </div><button class="btn primary" style="margin-top:10px">Crear Conjunto</button></form></div></div>
 </section>
 
 </div></main></div>
 <script>
+let conjuntoActualId = 1;
 let deferredPrompt;
+
+// VALIDAR SI SE ESTÁ EJECUTANDO DESDE LA APP INSTALADA O DESDE EL NAVEGADOR WEB
+const esAppEscritorio = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
@@ -165,15 +185,78 @@ document.getElementById('installAppBtn').addEventListener('click', async () => {
     }
 });
 
-function entrarAlSistema() {
-    document.getElementById('loginScreen').style.display = 'none';
+async function cargarConjuntosLogin() {
+    try {
+        const r = await fetch('/api/conjuntos');
+        const conjuntos = await r.json();
+        const select = document.getElementById('lConjunto');
+        select.innerHTML = conjuntos.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
+    } catch(e) { console.error("Error cargando conjuntos"); }
+}
+
+async function cargarConjuntosHeader() {
+    try {
+        const r = await fetch('/api/conjuntos');
+        const conjuntos = await r.json();
+        const select = document.getElementById('conjuntoSelect');
+        select.innerHTML = conjuntos.map(c => `<option value="${c.id}" ${c.id == conjuntoActualId ? 'selected' : ''}>${c.nombre}</option>`).join('');
+    } catch(e) { console.error("Error cargando conjuntos en cabecera"); }
+}
+
+cargarConjuntosLogin();
+
+document.getElementById('fLogin').onsubmit = async (e) => {
+    e.preventDefault();
+    const conjunto_id = parseInt(document.getElementById('lConjunto').value);
+    const username = document.getElementById('lUser').value;
+    const password = document.getElementById('lPass').value;
+    
+    try {
+        const r = await fetch('/api/login', {
+            method: 'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({username, password, conjunto_id})
+        });
+        if(!r.ok) throw new Error("Credenciales incorrectas para el conjunto seleccionado.");
+        const data = await r.json();
+        
+        conjuntoActualId = data.conjunto_id;
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('guardName').textContent = data.nombre.toUpperCase();
+        
+        await cargarConjuntosHeader();
+        
+        // RESTRICCIÓN DE CÁMARAS: SI NO ES APP DE ESCRITORIO, SE BLOQUEAN
+        if (!esAppEscritorio) {
+            document.getElementById('navCamarasBtn').style.display = 'none';
+            document.getElementById('panelCamarasWeb').innerHTML = `
+                <div class="panelhead"><h2>Acceso Restringido</h2></div>
+                <div class="body" style="text-align:center; padding:40px; color:var(--rojo);">
+                    <b>El Circuito Cerrado y las Cámaras en Vivo solo están disponibles desde la Aplicación de Escritorio instalada.</b>
+                    <p style="color:var(--suave); font-size:12px; margin-top:10px;">Por favor, instala la app en tu PC desde el portal de bienvenida para acceder a las transmisiones de video.</p>
+                </div>
+            `;
+        } else {
+            inicializarCamaras();
+        }
+
+        recargar();
+    } catch(err) { alert(err.message); }
+};
+
+async function cambiarConjuntoHeader() {
+    conjuntoActualId = document.getElementById('conjuntoSelect').value;
     recargar();
 }
 
-const camNames=["Torre A - Lobby","Torre B - Ascensores","Entrada Peatonal","Parqueadero Sótano 1","Perímetro Norte","Torre C - Pasillo 3"];
-function camera(n,i){return `<div class="camera" onclick="ampliar('${n}')"><div style="text-align:center;color:var(--suave)"><span>Circuito Cerrado</span><br>RTSP H.265<br>En vivo</div><div class="camlabel">${n}</div><div class="camstatus"><span>REC</span></div><div class="camfoot">Micrófono activo</div></div>`}
-cams.innerHTML=camNames.slice(0,4).map(camera).join("");
-camsAll.innerHTML=camNames.map(camera).join("");
+function inicializarCamaras() {
+    const camNames=["Torre A - Lobby","Torre B - Ascensores","Entrada Peatonal","Parqueadero Sótano 1","Perímetro Norte","Torre C - Pasillo 3"];
+    function camera(n){return `<div class="camera" onclick="ampliar('${n}')"><div style="text-align:center;color:var(--suave)"><span>Circuito Cerrado</span><br>RTSP H.265<br>En vivo</div><div class="camlabel">${n}</div><div class="camstatus"><span>REC</span></div></div>`}
+    const camsElem = document.getElementById('cams');
+    const camsAllElem = document.getElementById('camsAll');
+    if(camsElem) camsElem.innerHTML = camNames.slice(0,4).map(camera).join("");
+    if(camsAllElem) camsAllElem.innerHTML = camNames.map(camera).join("");
+}
+
 function ampliar(n){alert(`Transmitiendo audio bidireccional a [${n}].\nMicrófono del guardia activado.`)}
 
 function hora(){return new Date().toLocaleTimeString("es-CO",{hour:"2-digit",minute:"2-digit",second:"2-digit"})}
@@ -182,8 +265,10 @@ function logIA(msg, color="var(--texto)") {
     d.style.color = color;
     d.innerHTML = `<b>[${hora()}]</b> ${msg}`;
     const container = document.getElementById("iaFeed");
-    container.prepend(d);
-    if(container.children.length > 30) container.lastChild.remove();
+    if(container) {
+        container.prepend(d);
+        if(container.children.length > 30) container.lastChild.remove();
+    }
 }
 function simularAnalitica() {
     const torres = ["Torre A", "Torre B", "Torre C", "Torre D"];
@@ -202,17 +287,51 @@ function simularAnalitica() {
 }
 setInterval(simularAnalitica, 4500);
 
-function go(id){document.querySelectorAll(".view").forEach(x=>x.classList.remove("active"));document.getElementById(id).classList.add("active");document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("active",x.dataset.page===id));document.getElementById('crumb').textContent=document.querySelector(`[data-page="${id}"]`).textContent.trim();window.scrollTo(0,0)}
-document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>go(b.dataset.page));
-async function api(url,options={}){const sep=url.includes("?")?"&":"?";const r=await fetch(url.startsWith("/api/conjuntos")?url:url+sep+"conjunto_id=1",{headers:{"Content-Type":"application/json"},...options});return r.json()}
-async function recargar(){
-    const [res, movs] = await Promise.all([api("/api/residentes"), api("/api/movimientos")]);
-    document.getElementById("movs").innerHTML=movs.length?movs.map(m=>`<tr><td>${m.hora}</td><td>${m.persona}</td><td>${m.tipo}</td><td>${m.evento}</td></tr>`).join(""):'<tr><td colspan="4">Sin registros.</td></tr>';
-    document.getElementById("anfitrion").innerHTML='<option value="">Selecciona...</option>'+res.map(r=>`<option value="${r.nombre}">${r.nombre} (${r.torre} ${r.apto})</option>`).join("");
+function go(id){
+    if(id === 'camaras' && !esAppEscritorio) {
+        alert("Acceso denegado: El circuito cerrado de cámaras solo está disponible en la aplicación instalada.");
+        return;
+    }
+    document.querySelectorAll(".view").forEach(x=>x.classList.remove("active"));
+    document.getElementById(id).classList.add("active");
+    document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("active",x.dataset.page===id));
+    document.getElementById('crumb').textContent=document.querySelector(`[data-page="${id}"]`).textContent.trim();
+    window.scrollTo(0,0);
 }
-document.getElementById("fRes").onsubmit=async e=>{e.preventDefault();await api("/api/residentes",{method:"POST",body:JSON.stringify(Object.fromEntries(new FormData(e.target)))});e.target.reset();recargar();alert("Guardado en Base de Datos");};
-document.getElementById("fVis").onsubmit=async e=>{e.preventDefault();await api("/api/visitantes",{method:"POST",body:JSON.stringify(Object.fromEntries(new FormData(e.target)))});e.target.reset();recargar();};
-document.getElementById("fDom").onsubmit=async e=>{e.preventDefault();await api("/api/domicilios",{method:"POST",body:JSON.stringify(Object.fromEntries(new FormData(e.target)))});e.target.reset();recargar();};
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>go(b.dataset.page));
+
+async function api(url,options={}){
+    const sep = url.includes("?")?"&":"?";
+    const r = await fetch(url+sep+"conjunto_id="+conjuntoActualId, {headers:{"Content-Type":"application/json"},...options});
+    if(!r.ok) { const err = await r.json(); throw new Error(err.detail || "Error en la petición"); }
+    return r.json();
+}
+
+async function recargar(){
+    try {
+        const [res, movs] = await Promise.all([api("/api/residentes"), api("/api/movimientos")]);
+        document.getElementById("movs").innerHTML=movs.length?movs.map(m=>`<tr><td>${m.hora}</td><td>${m.persona}</td><td>${m.tipo}</td><td>${m.evento}</td></tr>`).join(""):'<tr><td colspan="4">Sin registros en este conjunto.</td></tr>';
+        document.getElementById("anfitrion").innerHTML='<option value="">Selecciona residente...</option>'+res.map(r=>`<option value="${r.nombre}">${r.nombre} (Torre ${r.torre} - Apto ${r.apto})</option>`).join("");
+    } catch(e) { console.error(e); }
+}
+
+document.getElementById("fRes").onsubmit=async e=>{e.preventDefault();try{await api("/api/residentes",{method:"POST",body:JSON.stringify(Object.fromEntries(new FormData(e.target)))} );e.target.reset();recargar();alert("Residente guardado exitosamente");}catch(err){alert(err.message);}};
+document.getElementById("fVis").onsubmit=async e=>{e.preventDefault();try{await api("/api/visitantes",{method:"POST",body:JSON.stringify(Object.fromEntries(e.target)))} );e.target.reset();recargar();alert("Acceso peatonal autorizado");}catch(err){alert(err.message);}};
+document.getElementById("fDom").onsubmit=async e=>{e.preventDefault();try{await api("/api/domicilios",{method:"POST",body:JSON.stringify(Object.fromEntries(e.target)))} );e.target.reset();recargar();alert("Domiciliario autorizado con éxito");}catch(err){alert(err.message);}};
+
+document.getElementById("fConjunto").onsubmit=async e=>{
+    e.preventDefault();
+    const data = Object.fromEntries(new FormData(e.target));
+    try {
+        const r = await fetch('/api/conjuntos', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data)});
+        if(!r.ok) throw new Error("No se pudo crear el conjunto");
+        const resData = await r.json();
+        e.target.reset();
+        await cargarConjuntosLogin();
+        await cargarConjuntosHeader();
+        alert(`Conjunto creado con éxito.\nCredenciales de acceso asignadas:\nUsuario: admin_${resData.id}\nContraseña: 12345`);
+    } catch(err) { alert(err.message); }
+};
 </script>
 </body>
 </html>
