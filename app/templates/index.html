@@ -377,7 +377,7 @@ async function recargar(){
     } catch(e) { console.error(e); }
 }
 
-document.getElementById("fRes").onsubmit=async e=>{
+document.getElementById("fRes").onsubmit = async e => {
     e.preventDefault();
     try {
         await api("/api/residentes",{method:"POST",body:JSON.stringify(Object.fromEntries(new FormData(e.target)))});
@@ -389,7 +389,7 @@ document.getElementById("fRes").onsubmit=async e=>{
     } catch(err){alert(err.message);}
 };
 
-document.getElementById("fVis").onsubmit=async e=>{
+document.getElementById("fVis").onsubmit = async e => {
     e.preventDefault();
     try {
         await api("/api/visitantes",{method:"POST",body:JSON.stringify(Object.fromEntries(new FormData(e.target)))});
@@ -399,7 +399,7 @@ document.getElementById("fVis").onsubmit=async e=>{
     } catch(err){alert(err.message);}
 };
 
-document.getElementById("fDom").onsubmit=async e=>{
+document.getElementById("fDom").onsubmit = async e => {
     e.preventDefault();
     try {
         await api("/api/domicilios",{method:"POST",body:JSON.stringify(Object.fromEntries(new FormData(e.target)))});
@@ -409,7 +409,7 @@ document.getElementById("fDom").onsubmit=async e=>{
     } catch(err){alert(err.message);}
 };
 
-document.getElementById("fConjunto").onsubmit=async e=>{
+document.getElementById("fConjunto").onsubmit = async e => {
     e.preventDefault();
     const data = Object.fromEntries(new FormData(e.target));
     try {

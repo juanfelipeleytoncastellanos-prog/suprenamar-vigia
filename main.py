@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from typing import Optional
 import sqlite3
 
-app = FastAPI(title="SUPRENAMAR VIGÍA IA", version="2.0")
+app = FastAPI(title="SUPRENAMAR VIGÍA IA", version="2.1")
 
 BASE_DIR = Path(__file__).resolve().parent
 DB_PATH = BASE_DIR / "vigia.db"
@@ -105,7 +105,7 @@ def inicializar_db():
 
 inicializar_db()
 
-# Esquemas Pydantic
+# Esquemas Pydantic limpios
 class Residente(BaseModel):
     nombre: str
     documento: Optional[str] = ""
