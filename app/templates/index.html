@@ -51,7 +51,6 @@ input,select { width:100%; padding:11px; border:1px solid #2b4560; border-radius
 </head>
 <body>
 
-<!-- PANTALLA DE LOGIN CON SELECCIÓN DE CONJUNTO Y CONTRASEÑA -->
 <div id="loginScreen" style="position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(rgba(7,17,31,0.92), rgba(7,17,31,0.95)), url('/static/logo.png');background-size:cover;background-position:center;z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;">
    <div class="panel" style="width:100%;max-width:400px;padding:35px;border-color:var(--azul);box-shadow: 0 0 40px rgba(77,182,255,0.2);text-align:center;">
        <img src="/static/logo.png" style="width:90px;height:90px;object-fit:contain;margin-bottom:10px;filter:drop-shadow(0 0 10px rgba(255,200,87,0.5))">
@@ -110,7 +109,6 @@ input,select { width:100%; padding:11px; border:1px solid #2b4560; border-radius
    </div>
   </div>
   
-  <!-- CAMARAS EN EL PANEL PRINCIPAL: SE OCULTAN SI ESTÁ EN LA WEB -->
   <div class="panel" id="panelCamarasWeb"><div class="panelhead"><h2>Vistas Cámaras Principales</h2><small id="estadoAccesoCams">Transmisión Directa</small></div>
    <div class="body"><div class="cameras" id="cams"></div></div></div>
  </div>
@@ -119,7 +117,6 @@ input,select { width:100%; padding:11px; border:1px solid #2b4560; border-radius
  <tbody id="movs"><tr><td colspan="4" class="empty">No hay movimientos.</td></tr></tbody></table></div></div>
 </section>
 
-<!-- SECCIÓN DE CÁMARAS DEDICADA -->
 <section class="view" id="camaras">
  <div class="heading"><div><h1>Circuito Cerrado (CCTV)</h1><div class="sub">Transmisión en vivo y audio bidireccional activo.</div></div></div>
  <div class="panel"><div class="body"><div class="cameras" style="grid-template-columns:repeat(3,1fr);" id="camsAll"></div></div></div>
@@ -167,7 +164,6 @@ input,select { width:100%; padding:11px; border:1px solid #2b4560; border-radius
 let conjuntoActualId = 1;
 let deferredPrompt;
 
-// VALIDAR SI SE ESTÁ EJECUTANDO DESDE LA APP INSTALADA O DESDE EL NAVEGADOR WEB
 const esAppEscritorio = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
 
 window.addEventListener('beforeinstallprompt', (e) => {
@@ -225,7 +221,6 @@ document.getElementById('fLogin').onsubmit = async (e) => {
         
         await cargarConjuntosHeader();
         
-        // RESTRICCIÓN DE CÁMARAS: SI NO ES APP DE ESCRITORIO, SE BLOQUEAN
         if (!esAppEscritorio) {
             document.getElementById('navCamarasBtn').style.display = 'none';
             document.getElementById('panelCamarasWeb').innerHTML = `
@@ -316,7 +311,7 @@ async function recargar(){
 }
 
 document.getElementById("fRes").onsubmit=async e=>{e.preventDefault();try{await api("/api/residentes",{method:"POST",body:JSON.stringify(Object.fromEntries(new FormData(e.target)))} );e.target.reset();recargar();alert("Residente guardado exitosamente");}catch(err){alert(err.message);}};
-document.getElementById("fVis").onsubmit=async e=>{e.preventDefault();try{await api("/api/visitantes",{method:"POST",body:JSON.stringify(Object.fromEntries(e.target)))} );e.target.reset();recargar();alert("Acceso peatonal autorizado");}catch(err){alert(err.message);}};
+document.getElementById("fVis").onsubmit=async e=>{e.preventDefault();try{await api("/api/visitantes",{method:"POST",body:JSON.stringify(Object.fromEntries(new FormData(e.target)))} );e.target.reset();recargar();alert("Acceso peatonal autorizado");}catch(err){alert(err.message);}};
 document.getElementById("fDom").onsubmit=async e=>{e.preventDefault();try{await api("/api/domicilios",{method:"POST",body:JSON.stringify(Object.fromEntries(e.target)))} );e.target.reset();recargar();alert("Domiciliario autorizado con éxito");}catch(err){alert(err.message);}};
 
 document.getElementById("fConjunto").onsubmit=async e=>{
