@@ -49,7 +49,6 @@ input,select { width:100%; padding:11px; border:1px solid #2b4560; border-radius
 </head>
 <body>
 
-<!-- Pantalla de Login Principal (Guarda y Administrador) -->
 <div id="loginScreen" style="position:fixed;top:0;left:0;width:100%;height:100%;background:#07111f;z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;">
     <div class="panel" style="width:100%;max-width:400px;padding:35px;border-color:var(--azul);box-shadow: 0 0 40px rgba(77,182,255,0.2);text-align:center;background:#101f33;">
         <img src="/static/logo.png" onerror="this.style.display='none'" style="width:90px;height:90px;object-fit:contain;margin-bottom:10px;filter:drop-shadow(0 0 10px rgba(255,200,87,0.5))">
@@ -67,7 +66,7 @@ input,select { width:100%; padding:11px; border:1px solid #2b4560; border-radius
         </form>
 
         <div style="margin-top:15px; text-align:center;">
-            <a href="/residente" style="color:var(--amarillo); font-size:11px; text-decoration:underline;">¿Eres Residente? Haz clic aquí para registrar tu rostro, vehículo y parqueadero</a>
+            <a href="/residente" target="_blank" style="color:var(--amarillo); font-size:11px; text-decoration:underline;">¿Eres Residente? Ir al Portal Autónomo de Registro</a>
         </div>
 
         <div style="margin-top:15px; border-top:1px solid var(--borde); padding-top:12px;">
@@ -76,7 +75,6 @@ input,select { width:100%; padding:11px; border:1px solid #2b4560; border-radius
     </div>
 </div>
 
-<!-- Panel de Control Operativo del Guarda / Admin -->
 <div class="app">
 <aside>
  <div class="logo-box">

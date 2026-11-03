@@ -7,7 +7,7 @@ from typing import Optional
 import sqlite3
 import os
 
-app = FastAPI(title="SUPRENAMAR VIGÍA IA", version="2.3")
+app = FastAPI(title="SUPRENAMAR VIGÍA IA", version="2.4")
 
 BASE_DIR = Path(__file__).resolve().parent
 DB_PATH = BASE_DIR / "vigia.db"
@@ -208,7 +208,7 @@ def crear_residente(d: Residente, conjunto_id: int = 1):
         nuevo_id = cur.lastrowid
     
     with conectar_db() as db:
-        db.execute("INSERT INTO movimientos (hora, persona, tipo, evento, conjunto_id) VALUES (datetime('now', 'localtime'), ?, 'Residente', 'Registro biométrico, placa: ' || COALESCE(?, 'N/A') || ' - Puesto: ' || COALESCE(?, 'N/A'), ?)", (d.nombre.strip(), d.placa.strip().upper(), d.puesto.strip(), conjunto_id))
+        db.execute("INSERT INTO movimientos (hora, persona, tipo, evento, conjunto_id) VALUES (datetime('now', 'localtime'), ?, 'Residente', 'Registro biométrico, placa: ' || COALESCE(?, 'N/A') || ' - Parqueadero: ' || COALESCE(?, 'N/A'), ?)", (d.nombre.strip(), d.placa.strip().upper(), d.puesto.strip(), conjunto_id))
         db.commit()
         
     return {"id": nuevo_id, **d.model_dump(), "conjunto_id": conjunto_id}
