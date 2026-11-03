@@ -7,7 +7,7 @@ from typing import Optional
 import sqlite3
 import os
 
-app = FastAPI(title="SUPRENAMAR VIGÍA IA", version="2.5")
+app = FastAPI(title="SUPRENAMAR VIGÍA IA", version="2.6")
 
 BASE_DIR = Path(__file__).resolve().parent
 DB_PATH = BASE_DIR / "vigia.db"
@@ -187,7 +187,6 @@ def crear_conjunto(d: ConjuntoNuevo):
             cur = db.execute("INSERT INTO conjuntos(nombre, creado_en) VALUES(?, datetime('now'))", (nombre_limpio,))
             conjunto_id = cur.lastrowid
             
-            # Crear usuario admin para este conjunto con su contraseña personalizada
             db.execute("INSERT INTO usuarios(username, password_hash, nombre_completo, rol, conjunto_id) VALUES(?, ?, ?, ?, ?)",
                 (f"admin_{conjunto_id}", password_limpia, f"Administrador {nombre_limpio}", "admin", conjunto_id))
             db.commit()
@@ -195,12 +194,27 @@ def crear_conjunto(d: ConjuntoNuevo):
         except sqlite3.IntegrityError:
             raise HTTPException(status_code=400, detail="El conjunto ya existe.")
 
+@app.delete("/api/conjuntos/{conjunto_id}")
+def eliminar_conjunto(conjunto_id: int):
+    if conjunto_id == 1:
+        raise HTTPException(status_code=400, detail="No se puede eliminar el conjunto principal del sistema.")
+    with conectar_db() as db:
+        validar_conjunto(db, conjunto_id)
+        db.execute("DELETE FROM residentes WHERE conjunto_id = ?", (conjunto_id,))
+        db.execute("DELETE FROM visitantes WHERE conjunto_id = ?", (conjunto_id,))
+        db.execute("DELETE FROM domicilios WHERE conjunto_id = ?", (conjunto_id,))
+        db.execute("DELETE FROM movimientos WHERE conjunto_id = ?", (conjunto_id,))
+        db.execute("DELETE FROM usuarios WHERE conjunto_id = ?", (conjunto_id,))
+        db.execute("DELETE FROM conjuntos WHERE id = ?", (conjunto_id,))
+        db.commit()
+    return {"mensaje": "Conjunto eliminado correctamente"}
+
 @app.post("/api/login")
 def login_sistema(d: UsuarioLogin):
     with conectar_db() as db:
         user = db.execute("SELECT * FROM usuarios WHERE username = ? AND conjunto_id = ?", (d.username.strip(), d.conjunto_id)).fetchone()
         if not user or user["password_hash"] != d.password.strip():
-            raise HTTPException(status_code=401, detail="Credenciales incorrectas o no autorizadas para este conjunto.")
+            raise HTTPException(status_code=401, detail="Credenciales incorrectas o contraseña errada para este conjunto.")
         return {"mensaje": "Acceso concedido", "nombre": user["nombre_completo"], "rol": user["rol"], "conjunto_id": user["conjunto_id"]}
 
 @app.post("/api/cambiar-password")
@@ -209,7 +223,6 @@ def cambiar_password(d: CambioPassword):
         user = db.execute("SELECT * FROM usuarios WHERE username = ?", (d.username.strip(),)).fetchone()
         if not user or user["password_hash"] != d.password_actual.strip():
             raise HTTPException(status_code=401, detail="La contraseña actual es incorrecta.")
-        
         db.execute("UPDATE usuarios SET password_hash = ? WHERE username = ?", (d.password_nueva.strip(), d.username.strip()))
         db.commit()
         return {"mensaje": "Contraseña actualizada con éxito"}

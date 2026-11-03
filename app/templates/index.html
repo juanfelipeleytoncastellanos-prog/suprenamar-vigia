@@ -176,13 +176,17 @@ input,select { width:100%; padding:11px; border:1px solid #2b4560; border-radius
 </section>
 
 <section class="view" id="conjuntos">
- <div class="heading"><div><h1>Gestión de Conjuntos Residenciales & Contraseñas</h1><div class="sub">Crea nuevos conjuntos asignando su propia contraseña de seguridad o actualiza la actual.</div></div></div>
+ <div class="heading"><div><h1>Gestión de Conjuntos Residenciales & Contraseñas</h1><div class="sub">Crea nuevos conjuntos, cámbiales la contraseña o elimínalos de forma segura.</div></div></div>
  
  <div class="panel" style="margin-bottom:20px;"><div class="panelhead"><h2>Registrar Nuevo Conjunto</h2></div><div class="body">
  <form id="fConjunto"><div class="formgrid">
  <div class="field"><label>Nombre del Conjunto Residencial</label><input name="nombre" placeholder="Ej: Conjunto Reservas del Bosque" required></div>
  <div class="field"><label>Contraseña de Acceso para este Conjunto</label><input type="password" name="password" placeholder="Contraseña segura" required></div>
  </div><button class="btn primary" style="margin-top:10px">Crear Conjunto con Contraseña</button></form></div></div>
+
+ <div class="panel" style="margin-bottom:20px;"><div class="panelhead"><h2>Lista y Eliminación de Conjuntos</h2></div>
+ <div style="overflow:auto"><table><thead><tr><th>ID</th><th>NOMBRE DEL CONJUNTO</th><th>ACCIÓN</th></tr></thead>
+ <tbody id="tablaConjuntos"><tr><td colspan="3" class="empty">Cargando conjuntos...</td></tr></tbody></table></div></div>
 
  <div class="panel"><div class="panelhead"><h2>Cambiar Contraseña de Administrador</h2></div><div class="body">
  <form id="fPassChange"><div class="formgrid">
@@ -216,6 +220,44 @@ async function cargarConjuntosHeader() {
     } catch(e) { console.error("Error cargando conjuntos en cabecera"); }
 }
 
+async function cargarTablaConjuntosAdmin() {
+    try {
+        const r = await fetch('/api/conjuntos');
+        const conjuntos = await r.json();
+        const tbody = document.getElementById('tablaConjuntos');
+        if(tbody) {
+            tbody.innerHTML = conjuntos.map(c => `
+                <tr>
+                    <td><b>#${c.id}</b></td>
+                    <td>${c.nombre}</td>
+                    <td>
+                        ${c.id !== 1 ? `<button class="btn" style="background:#4a1515; border-color:#ff5e5e; color:#ff5e5e; padding:5px 10px;" onclick="eliminarConjunto(${c.id}, '${c.nombre}')">Eliminar</button>` : '<span style="color:var(--suave);">Conjunto Principal (Protegido)</span>'}
+                    </td>
+                </tr>
+            `).join('');
+        }
+    } catch(e) { console.error("Error cargando tabla conjuntos"); }
+}
+
+async function eliminarConjunto(id, nombre) {
+    const confirmacion = prompt(`⚠️ ADVERTENCIA: Vas a eliminar el conjunto "${nombre}" y todos sus datos (residentes, registros, usuarios).\n\nEscribe "ELIMINAR" para confirmar:`);
+    if (confirmacion !== "ELIMINAR") {
+        alert("Operación cancelada.");
+        return;
+    }
+
+    try {
+        const r = await fetch(`/api/conjuntos/${id}`, { method: 'DELETE' });
+        if(!r.ok) throw new Error("No se pudo eliminar el conjunto.");
+        alert("Conjunto eliminado exitosamente.");
+        cargarConjuntosLogin();
+        cargarConjuntosHeader();
+        cargarTablaConjuntosAdmin();
+    } catch(err) {
+        alert(err.message);
+    }
+}
+
 cargarConjuntosLogin();
 
 document.getElementById('fLogin').onsubmit = async (e) => {
@@ -241,6 +283,7 @@ document.getElementById('fLogin').onsubmit = async (e) => {
         document.getElementById('cUser').value = username;
         
         await cargarConjuntosHeader();
+        cargarTablaConjuntosAdmin();
         
         if (rolUsuarioActual !== 'admin') {
             const btnConjuntos = document.getElementById('navConjuntosBtn');
@@ -335,6 +378,9 @@ function go(id){
     if(id === 'residentes') {
         iniciarCamaraResidente();
     }
+    if(id === 'conjuntos') {
+        cargarTablaConjuntosAdmin();
+    }
     window.scrollTo(0,0);
 }
 document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>go(b.dataset.page));
@@ -413,6 +459,7 @@ document.getElementById("fConjunto").onsubmit = async e => {
         
         await cargarConjuntosLogin();
         await cargarConjuntosHeader();
+        await cargarTablaConjuntosAdmin();
         
         const selectLogin = document.getElementById('lConjunto');
         if(selectLogin) selectLogin.value = resData.id;
