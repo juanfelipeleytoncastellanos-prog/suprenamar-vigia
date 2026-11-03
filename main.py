@@ -7,7 +7,7 @@ from typing import Optional
 import sqlite3
 import os
 
-app = FastAPI(title="SUPRENAMAR VIGÍA IA", version="2.4")
+app = FastAPI(title="SUPRENAMAR VIGÍA IA", version="2.5")
 
 BASE_DIR = Path(__file__).resolve().parent
 DB_PATH = BASE_DIR / "vigia.db"
@@ -132,11 +132,17 @@ class Domicilio(BaseModel):
 
 class ConjuntoNuevo(BaseModel):
     nombre: str
+    password: str
 
 class UsuarioLogin(BaseModel):
     username: str
     password: str
     conjunto_id: int
+
+class CambioPassword(BaseModel):
+    username: str
+    password_actual: str
+    password_nueva: str
 
 def validar_conjunto(db, conjunto_id: int):
     c = db.execute("SELECT id FROM conjuntos WHERE id = ?", (conjunto_id,)).fetchone()
@@ -174,12 +180,18 @@ def crear_conjunto(d: ConjuntoNuevo):
     with conectar_db() as db:
         try:
             nombre_limpio = d.nombre.strip()
+            password_limpia = d.password.strip()
+            if not password_limpia:
+                raise HTTPException(status_code=400, detail="La contraseña no puede estar vacía.")
+                
             cur = db.execute("INSERT INTO conjuntos(nombre, creado_en) VALUES(?, datetime('now'))", (nombre_limpio,))
             conjunto_id = cur.lastrowid
+            
+            # Crear usuario admin para este conjunto con su contraseña personalizada
             db.execute("INSERT INTO usuarios(username, password_hash, nombre_completo, rol, conjunto_id) VALUES(?, ?, ?, ?, ?)",
-                (f"admin_{conjunto_id}", "12345", f"Administrador {nombre_limpio}", "admin", conjunto_id))
+                (f"admin_{conjunto_id}", password_limpia, f"Administrador {nombre_limpio}", "admin", conjunto_id))
             db.commit()
-            return {"id": conjunto_id, "nombre": nombre_limpio}
+            return {"id": conjunto_id, "nombre": nombre_limpio, "username": f"admin_{conjunto_id}"}
         except sqlite3.IntegrityError:
             raise HTTPException(status_code=400, detail="El conjunto ya existe.")
 
@@ -190,6 +202,17 @@ def login_sistema(d: UsuarioLogin):
         if not user or user["password_hash"] != d.password.strip():
             raise HTTPException(status_code=401, detail="Credenciales incorrectas o no autorizadas para este conjunto.")
         return {"mensaje": "Acceso concedido", "nombre": user["nombre_completo"], "rol": user["rol"], "conjunto_id": user["conjunto_id"]}
+
+@app.post("/api/cambiar-password")
+def cambiar_password(d: CambioPassword):
+    with conectar_db() as db:
+        user = db.execute("SELECT * FROM usuarios WHERE username = ?", (d.username.strip(),)).fetchone()
+        if not user or user["password_hash"] != d.password_actual.strip():
+            raise HTTPException(status_code=401, detail="La contraseña actual es incorrecta.")
+        
+        db.execute("UPDATE usuarios SET password_hash = ? WHERE username = ?", (d.password_nueva.strip(), d.username.strip()))
+        db.commit()
+        return {"mensaje": "Contraseña actualizada con éxito"}
 
 @app.get("/api/residentes")
 def listar_residentes(conjunto_id: int = 1):

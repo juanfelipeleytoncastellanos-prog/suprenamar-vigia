@@ -68,10 +68,6 @@ input,select { width:100%; padding:11px; border:1px solid #2b4560; border-radius
         <div style="margin-top:15px; text-align:center;">
             <a href="/residente" target="_blank" style="color:var(--amarillo); font-size:11px; text-decoration:underline;">¿Eres Residente? Ir al Portal Autónomo de Registro</a>
         </div>
-
-        <div style="margin-top:15px; border-top:1px solid var(--borde); padding-top:12px;">
-            <button id="installAppBtn" class="btn" style="width:100%; background:#091625; border-color:var(--amarillo); color:var(--amarillo); display:none;">Instalar Aplicación de Escritorio</button>
-        </div>
     </div>
 </div>
 
@@ -180,36 +176,27 @@ input,select { width:100%; padding:11px; border:1px solid #2b4560; border-radius
 </section>
 
 <section class="view" id="conjuntos">
- <div class="heading"><div><h1>Gestión de Conjuntos Residenciales</h1><div class="sub">Área exclusiva del Administrador General para crear y configurar nuevos conjuntos residenciales.</div></div></div>
+ <div class="heading"><div><h1>Gestión de Conjuntos Residenciales & Contraseñas</h1><div class="sub">Crea nuevos conjuntos asignando su propia contraseña de seguridad o actualiza la actual.</div></div></div>
+ 
  <div class="panel" style="margin-bottom:20px;"><div class="panelhead"><h2>Registrar Nuevo Conjunto</h2></div><div class="body">
  <form id="fConjunto"><div class="formgrid">
  <div class="field"><label>Nombre del Conjunto Residencial</label><input name="nombre" placeholder="Ej: Conjunto Reservas del Bosque" required></div>
- </div><button class="btn primary" style="margin-top:10px">Crear Conjunto</button></form></div></div>
+ <div class="field"><label>Contraseña de Acceso para este Conjunto</label><input type="password" name="password" placeholder="Contraseña segura" required></div>
+ </div><button class="btn primary" style="margin-top:10px">Crear Conjunto con Contraseña</button></form></div></div>
+
+ <div class="panel"><div class="panelhead"><h2>Cambiar Contraseña de Administrador</h2></div><div class="body">
+ <form id="fPassChange"><div class="formgrid">
+ <div class="field"><label>Usuario Administrador</label><input id="cUser" placeholder="Ej: admin_1" required></div>
+ <div class="field"><label>Contraseña Actual</label><input type="password" id="cActual" required></div>
+ <div class="field"><label>Nueva Contraseña</label><input type="password" id="cNueva" required></div>
+ </div><button class="btn primary" style="margin-top:10px">Actualizar Contraseña</button></form></div></div>
 </section>
 
 </div></main></div>
 <script>
 let conjuntoActualId = 1;
 let rolUsuarioActual = '';
-let deferredPrompt;
-let localStream = null;
-
-const esAppEscritorio = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-
-window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    deferredPrompt = e;
-    document.getElementById('installAppBtn').style.display = 'block';
-});
-
-document.getElementById('installAppBtn').addEventListener('click', async () => {
-    if (deferredPrompt) {
-        deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
-        deferredPrompt = null;
-        document.getElementById('installAppBtn').style.display = 'none';
-    }
-});
+let usernameActual = '';
 
 async function cargarConjuntosLogin() {
     try {
@@ -242,13 +229,16 @@ document.getElementById('fLogin').onsubmit = async (e) => {
             method: 'POST', headers:{'Content-Type':'application/json'},
             body: JSON.stringify({username, password, conjunto_id})
         });
-        if(!r.ok) throw new Error("Credenciales incorrectas para el conjunto seleccionado.");
+        if(!r.ok) throw new Error("Credenciales incorrectas o contraseña errada para este conjunto.");
         const data = await r.json();
         
         conjuntoActualId = data.conjunto_id;
         rolUsuarioActual = data.rol;
+        usernameActual = username;
+        
         document.getElementById('loginScreen').style.display = 'none';
         document.getElementById('guardName').textContent = `${data.nombre.toUpperCase()} (${data.rol.toUpperCase()})`;
+        document.getElementById('cUser').value = username;
         
         await cargarConjuntosHeader();
         
@@ -306,6 +296,7 @@ function simularAnalitica() {
 }
 setInterval(simularAnalitica, 4500);
 
+let localStream = null;
 async function iniciarCamaraResidente() {
     try {
         const video = document.getElementById('camaraResidente');
@@ -426,7 +417,28 @@ document.getElementById("fConjunto").onsubmit = async e => {
         const selectLogin = document.getElementById('lConjunto');
         if(selectLogin) selectLogin.value = resData.id;
 
-        alert(`¡Conjunto "${resData.nombre}" creado con éxito!\n\nUsuario de acceso: admin_${resData.id}\nContraseña: 12345\n\nYa puedes seleccionarlo y entrar.`);
+        alert(`¡Conjunto "${resData.nombre}" creado con éxito!\n\nUsuario asignado: ${resData.username}\nContraseña: [La que ingresaste]\n\nYa puedes iniciar sesión.`);
+    } catch(err) { alert(err.message); }
+};
+
+document.getElementById("fPassChange").onsubmit = async e => {
+    e.preventDefault();
+    const username = document.getElementById('cUser').value;
+    const password_actual = document.getElementById('cActual').value;
+    const password_nueva = document.getElementById('cNueva').value;
+    
+    try {
+        const r = await fetch('/api/cambiar-password', {
+            method: 'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({username, password_actual, password_nueva})
+        });
+        if(!r.ok) {
+            const errJson = await r.json();
+            throw new Error(errJson.detail || "Error al cambiar contraseña");
+        }
+        alert("¡Contraseña actualizada correctamente!");
+        e.target.reset();
+        document.getElementById('cUser').value = usernameActual;
     } catch(err) { alert(err.message); }
 };
 </script>
