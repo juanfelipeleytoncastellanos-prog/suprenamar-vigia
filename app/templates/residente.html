@@ -136,13 +136,16 @@ document.getElementById('fResidentePortal').onsubmit = async (e) => {
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(formData)
         });
-        if(!r.ok) throw new Error("Error al registrar los datos.");
+        if(!r.ok) {
+            const errJson = await r.json();
+            throw new Error(errJson.detail || "Error al registrar los datos.");
+        }
         alert("¡Registro exitoso! Su biometría facial, vehículo y puesto de parqueadero han quedado guardados en el sistema del conjunto.");
         e.target.reset();
         document.getElementById('fotoRostroInput').value = "";
         document.getElementById('previewRostro').innerHTML = "Sin foto";
     } catch(err) {
-        alert(err.message);
+        alert("Error: " + err.message);
     }
 };
 </script>
