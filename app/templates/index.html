@@ -53,16 +53,12 @@ input,select { width:100%; padding:11px; border:1px solid #2b4560; border-radius
     <div class="panel" style="width:100%;max-width:400px;padding:35px;border-color:var(--azul);box-shadow: 0 0 40px rgba(77,182,255,0.2);text-align:center;background:#101f33;">
         <img src="/static/logo.png" onerror="this.style.display='none'" style="width:90px;height:90px;object-fit:contain;margin-bottom:10px;filter:drop-shadow(0 0 10px rgba(255,200,87,0.5))">
         <h2 style="margin-bottom:5px;color:var(--azul);font-size:24px;">SUPRENAMAR</h2>
-        <p style="color:var(--suave);font-size:11px;margin-top:0;margin-bottom:20px;letter-spacing:1px;">SEGURIDAD PRIVADA · ACCESO POR CONJUNTO</p>
+        <p style="color:var(--suave);font-size:11px;margin-top:0;margin-bottom:20px;letter-spacing:1px;">SEGURIDAD PRIVADA · ACCESO DIRECTO</p>
         
         <form id="fLogin" style="text-align:left;">
-            <div class="field">
-                <label>Seleccionar Conjunto</label>
-                <select id="lConjunto" required style="margin-bottom:12px;"><option value="">Cargando conjuntos...</option></select>
-            </div>
-            <div class="field"><label>Usuario</label><input id="lUser" placeholder="Ej: admin o guarda" required></div>
+            <div class="field"><label>Usuario</label><input id="lUser" placeholder="Ej: admin o admin_2" required></div>
             <div class="field" style="margin-top:12px"><label>Contraseña</label><input type="password" id="lPass" placeholder="Contraseña de acceso" required></div>
-            <button type="submit" class="btn primary" style="width:100%;margin-top:22px;font-size:14px;padding:12px;">Iniciar Turno Segurizado</button>
+            <button type="submit" class="btn primary" style="width:100%;margin-top:22px;font-size:14px;padding:12px;">Iniciar Turno Automático</button>
         </form>
 
         <div style="margin-top:15px; text-align:center;">
@@ -89,7 +85,7 @@ input,select { width:100%; padding:11px; border:1px solid #2b4560; border-radius
 <main>
 <header><small>SUPRENAMAR / <strong id="crumb">Panel principal</strong></small>
 <div style="display:flex;align-items:center;gap:15px">
- <select id="conjuntoSelect" style="max-width:220px; background:#07111f;" onchange="cambiarConjuntoHeader()"><option value="1">Cargando...</option></select>
+ <strong id="conjuntoLabel" style="color:var(--amarillo); font-size:13px;">CONJUNTO: CARGANDO...</strong>
  <strong id="guardName" style="color:var(--verde);">OPERADOR</strong>
 </div></header>
 <div class="content">
@@ -202,24 +198,6 @@ let conjuntoActualId = 1;
 let rolUsuarioActual = '';
 let usernameActual = '';
 
-async function cargarConjuntosLogin() {
-    try {
-        const r = await fetch('/api/conjuntos');
-        const conjuntos = await r.json();
-        const select = document.getElementById('lConjunto');
-        select.innerHTML = conjuntos.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
-    } catch(e) { console.error("Error cargando conjuntos"); }
-}
-
-async function cargarConjuntosHeader() {
-    try {
-        const r = await fetch('/api/conjuntos');
-        const conjuntos = await r.json();
-        const select = document.getElementById('conjuntoSelect');
-        select.innerHTML = conjuntos.map(c => `<option value="${c.id}" ${c.id == conjuntoActualId ? 'selected' : ''}>${c.nombre}</option>`).join('');
-    } catch(e) { console.error("Error cargando conjuntos en cabecera"); }
-}
-
 async function cargarTablaConjuntosAdmin() {
     try {
         const r = await fetch('/api/conjuntos');
@@ -250,28 +228,23 @@ async function eliminarConjunto(id, nombre) {
         const r = await fetch(`/api/conjuntos/${id}`, { method: 'DELETE' });
         if(!r.ok) throw new Error("No se pudo eliminar el conjunto.");
         alert("Conjunto eliminado exitosamente.");
-        cargarConjuntosLogin();
-        cargarConjuntosHeader();
         cargarTablaConjuntosAdmin();
     } catch(err) {
         alert(err.message);
     }
 }
 
-cargarConjuntosLogin();
-
 document.getElementById('fLogin').onsubmit = async (e) => {
     e.preventDefault();
-    const conjunto_id = parseInt(document.getElementById('lConjunto').value);
     const username = document.getElementById('lUser').value;
     const password = document.getElementById('lPass').value;
     
     try {
         const r = await fetch('/api/login', {
             method: 'POST', headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({username, password, conjunto_id})
+            body: JSON.stringify({username, password})
         });
-        if(!r.ok) throw new Error("Credenciales incorrectas o contraseña errada para este conjunto.");
+        if(!r.ok) throw new Error("Usuario o contraseña incorrectos.");
         const data = await r.json();
         
         conjuntoActualId = data.conjunto_id;
@@ -280,9 +253,9 @@ document.getElementById('fLogin').onsubmit = async (e) => {
         
         document.getElementById('loginScreen').style.display = 'none';
         document.getElementById('guardName').textContent = `${data.nombre.toUpperCase()} (${data.rol.toUpperCase()})`;
+        document.getElementById('conjuntoLabel').textContent = `CONJUNTO: ${data.conjunto_nombre.toUpperCase()}`;
         document.getElementById('cUser').value = username;
         
-        await cargarConjuntosHeader();
         cargarTablaConjuntosAdmin();
         
         if (rolUsuarioActual !== 'admin') {
@@ -294,11 +267,6 @@ document.getElementById('fLogin').onsubmit = async (e) => {
         recargar();
     } catch(err) { alert(err.message); }
 };
-
-async function cambiarConjuntoHeader() {
-    conjuntoActualId = document.getElementById('conjuntoSelect').value;
-    recargar();
-}
 
 function inicializarCamaras() {
     const camNames=["Torre A - Lobby","Torre B - Ascensores","Entrada Peatonal","Parqueadero Sótano 1","Perímetro Norte","Torre C - Pasillo 3"];
@@ -456,15 +424,9 @@ document.getElementById("fConjunto").onsubmit = async e => {
         }
         const resData = await r.json();
         e.target.reset();
-        
-        await cargarConjuntosLogin();
-        await cargarConjuntosHeader();
         await cargarTablaConjuntosAdmin();
-        
-        const selectLogin = document.getElementById('lConjunto');
-        if(selectLogin) selectLogin.value = resData.id;
 
-        alert(`¡Conjunto "${resData.nombre}" creado con éxito!\n\nUsuario asignado: ${resData.username}\nContraseña: [La que ingresaste]\n\nYa puedes iniciar sesión.`);
+        alert(`¡Conjunto "${resData.nombre}" creado con éxito!\n\nUsuario asignado: ${resData.username}\nContraseña: [La que ingresaste]\n\nYa puedes iniciar sesión con él.`);
     } catch(err) { alert(err.message); }
 };
 

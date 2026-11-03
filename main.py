@@ -7,7 +7,7 @@ from typing import Optional
 import sqlite3
 import os
 
-app = FastAPI(title="SUPRENAMAR VIGÍA IA", version="2.6")
+app = FastAPI(title="SUPRENAMAR VIGÍA IA", version="2.7")
 
 BASE_DIR = Path(__file__).resolve().parent
 DB_PATH = BASE_DIR / "vigia.db"
@@ -137,7 +137,6 @@ class ConjuntoNuevo(BaseModel):
 class UsuarioLogin(BaseModel):
     username: str
     password: str
-    conjunto_id: int
 
 class CambioPassword(BaseModel):
     username: str
@@ -212,10 +211,16 @@ def eliminar_conjunto(conjunto_id: int):
 @app.post("/api/login")
 def login_sistema(d: UsuarioLogin):
     with conectar_db() as db:
-        user = db.execute("SELECT * FROM usuarios WHERE username = ? AND conjunto_id = ?", (d.username.strip(), d.conjunto_id)).fetchone()
+        user = db.execute("SELECT u.*, c.nombre as conjunto_nombre FROM usuarios u JOIN conjuntos c ON u.conjunto_id = c.id WHERE u.username = ?", (d.username.strip(),)).fetchone()
         if not user or user["password_hash"] != d.password.strip():
-            raise HTTPException(status_code=401, detail="Credenciales incorrectas o contraseña errada para este conjunto.")
-        return {"mensaje": "Acceso concedido", "nombre": user["nombre_completo"], "rol": user["rol"], "conjunto_id": user["conjunto_id"]}
+            raise HTTPException(status_code=401, detail="Usuario o contraseña incorrectos.")
+        return {
+            "mensaje": "Acceso concedido",
+            "nombre": user["nombre_completo"],
+            "rol": user["rol"],
+            "conjunto_id": user["conjunto_id"],
+            "conjunto_nombre": user["conjunto_nombre"]
+        }
 
 @app.post("/api/cambiar-password")
 def cambiar_password(d: CambioPassword):
