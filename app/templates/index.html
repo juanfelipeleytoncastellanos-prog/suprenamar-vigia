@@ -265,7 +265,6 @@ document.getElementById('fLogin').onsubmit = async (e) => {
         
         cargarTablaConjuntosAdmin();
         
-        // Bloqueo estricto de funciones de administrador si el rol es 'guarda'
         const btnConjuntos = document.getElementById('navConjuntosBtn');
         if (rolUsuarioActual !== 'admin') {
             if (btnConjuntos) btnConjuntos.style.display = 'none';
@@ -394,13 +393,19 @@ async function recargar(){
 document.getElementById("fRes").onsubmit = async e => {
     e.preventDefault();
     try {
-        await api("/api/residentes",{method:"POST",body:JSON.stringify(Object.fromEntries(new FormData(e.target)))});
+        const formData = Object.fromEntries(new FormData(e.target));
+        await api("/api/residentes", {
+            method: "POST",
+            body: JSON.stringify(formData)
+        });
         e.target.reset();
         document.getElementById('fotoRostroInput').value = "";
         document.getElementById('previewRostro').innerHTML = "Sin foto";
         recargar();
-        alert("Residente, biometría, placa y parqueadero guardados exitosamente");
-    } catch(err){alert(err.message);}
+        alert("¡Residente, biometría, placa y parqueadero guardados exitosamente!");
+    } catch(err) {
+        alert("Error al guardar: " + err.message);
+    }
 };
 
 document.getElementById("fVis").onsubmit = async e => {
@@ -457,9 +462,4 @@ document.getElementById("fPassChange").onsubmit = async e => {
         }
         alert("¡Contraseña actualizada correctamente!");
         e.target.reset();
-        document.getElementById('cUser').value = usernameActual;
-    } catch(err) { alert(err.message); }
-};
-</script>
-</body>
-</html>
+        document.getElementById('cUser').value

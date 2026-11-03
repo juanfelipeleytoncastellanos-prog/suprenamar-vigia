@@ -7,7 +7,7 @@ from typing import Optional
 import sqlite3
 import os
 
-app = FastAPI(title="SUPRENAMAR VIGÍA IA", version="2.8")
+app = FastAPI(title="SUPRENAMAR VIGÍA IA", version="2.9")
 
 BASE_DIR = Path(__file__).resolve().parent
 DB_PATH = BASE_DIR / "vigia.db"
@@ -109,10 +109,10 @@ def inicializar_db():
 inicializar_db()
 
 class Residente(BaseModel):
-    nombre: str
+    nombre: Optional[str] = ""
     documento: Optional[str] = ""
-    torre: str
-    apto: str
+    torre: Optional[str] = ""
+    apto: Optional[str] = ""
     placa: Optional[str] = ""
     puesto: Optional[str] = ""
     foto_rostro: Optional[str] = ""
@@ -134,7 +134,7 @@ class ConjuntoNuevo(BaseModel):
     nombre: str
     username: str
     password: str
-    rol: str = "admin" # Puede ser 'admin' o 'guarda'
+    rol: str = "admin"
 
 class UsuarioLogin(BaseModel):
     username: str
@@ -196,7 +196,7 @@ def crear_conjunto(d: ConjuntoNuevo):
             db.commit()
             return {"id": conjunto_id, "nombre": nombre_limpio, "username": user_limpio}
         except sqlite3.IntegrityError:
-            raise HTTPException(status_code=400, detail="El nombre de usuario o del conjunto ya existe. Elija otro.")
+            raise HTTPException(status_code=400, detail="El nombre de usuario o del conjunto ya existe.")
 
 @app.delete("/api/conjuntos/{conjunto_id}")
 def eliminar_conjunto(conjunto_id: int):
@@ -248,16 +248,30 @@ def listar_residentes(conjunto_id: int = 1):
 def crear_residente(d: Residente, conjunto_id: int = 1):
     with conectar_db() as db:
         validar_conjunto(db, conjunto_id)
-        cur = db.execute("INSERT INTO residentes(nombre,documento,torre,apto,placa,puesto,foto_rostro,creado_en,conjunto_id) VALUES(?,?,?,?,?,?,?,?,datetime('now'))",
-            (d.nombre.strip(), d.documento.strip(), d.torre, d.apto.strip(), d.placa.strip().upper(), d.puesto.strip(), d.foto_rostro, conjunto_id))
+        
+        nombre_val = d.nombre.strip() if d.nombre else "Sin nombre"
+        doc_val = d.documento.strip() if d.documento else ""
+        torre_val = d.torre.strip() if d.torre else "1"
+        apto_val = d.apto.strip() if d.apto else "1"
+        placa_val = d.placa.strip().upper() if d.placa else ""
+        puesto_val = d.puesto.strip() if d.puesto else ""
+        foto_val = d.foto_rostro if d.foto_rostro else ""
+
+        cur = db.execute(
+            "INSERT INTO residentes(nombre, documento, torre, apto, placa, puesto, foto_rostro, creado_en, conjunto_id) VALUES(?,?,?,?,?,?,?,datetime('now'),?)",
+            (nombre_val, doc_val, torre_val, apto_val, placa_val, puesto_val, foto_val, conjunto_id)
+        )
         db.commit()
         nuevo_id = cur.lastrowid
     
     with conectar_db() as db:
-        db.execute("INSERT INTO movimientos (hora, persona, tipo, evento, conjunto_id) VALUES (datetime('now', 'localtime'), ?, 'Residente', 'Registro biométrico, placa: ' || COALESCE(?, 'N/A') || ' - Parqueadero: ' || COALESCE(?, 'N/A'), ?)", (d.nombre.strip(), d.placa.strip().upper(), d.puesto.strip(), conjunto_id))
+        db.execute(
+            "INSERT INTO movimientos (hora, persona, tipo, evento, conjunto_id) VALUES (datetime('now', 'localtime'), ?, 'Residente', 'Registro biométrico, placa: ' || COALESCE(?, 'N/A') || ' - Parqueadero: ' || COALESCE(?, 'N/A'), ?)",
+            (nombre_val, placa_val or 'N/A', puesto_val or 'N/A', conjunto_id)
+        )
         db.commit()
         
-    return {"id": nuevo_id, **d.model_dump(), "conjunto_id": conjunto_id}
+    return {"id": nuevo_id, "status": "ok"}
 
 @app.get("/api/movimientos")
 def listar_movimientos(conjunto_id: int = 1):
