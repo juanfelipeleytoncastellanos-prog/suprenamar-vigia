@@ -56,7 +56,7 @@ input,select { width:100%; padding:11px; border:1px solid #2b4560; border-radius
         <p style="color:var(--suave);font-size:11px;margin-top:0;margin-bottom:20px;letter-spacing:1px;">SEGURIDAD PRIVADA · ACCESO DIRECTO</p>
         
         <form id="fLogin" style="text-align:left;">
-            <div class="field"><label>Usuario</label><input id="lUser" placeholder="Ej: admin o admin_2" required></div>
+            <div class="field"><label>Usuario</label><input id="lUser" placeholder="Ej: admin o usuario_personalizado" required></div>
             <div class="field" style="margin-top:12px"><label>Contraseña</label><input type="password" id="lPass" placeholder="Contraseña de acceso" required></div>
             <button type="submit" class="btn primary" style="width:100%;margin-top:22px;font-size:14px;padding:12px;">Iniciar Turno Automático</button>
         </form>
@@ -172,13 +172,20 @@ input,select { width:100%; padding:11px; border:1px solid #2b4560; border-radius
 </section>
 
 <section class="view" id="conjuntos">
- <div class="heading"><div><h1>Gestión de Conjuntos Residenciales & Contraseñas</h1><div class="sub">Crea nuevos conjuntos, cámbiales la contraseña o elimínalos de forma segura.</div></div></div>
+ <div class="heading"><div><h1>Gestión de Conjuntos Residenciales & Contraseñas</h1><div class="sub">Crea nuevos conjuntos definiendo su usuario y contraseña personalizados, o elimínalos de forma segura.</div></div></div>
  
  <div class="panel" style="margin-bottom:20px;"><div class="panelhead"><h2>Registrar Nuevo Conjunto</h2></div><div class="body">
  <form id="fConjunto"><div class="formgrid">
  <div class="field"><label>Nombre del Conjunto Residencial</label><input name="nombre" placeholder="Ej: Conjunto Reservas del Bosque" required></div>
- <div class="field"><label>Contraseña de Acceso para este Conjunto</label><input type="password" name="password" placeholder="Contraseña segura" required></div>
- </div><button class="btn primary" style="margin-top:10px">Crear Conjunto con Contraseña</button></form></div></div>
+ <div class="field"><label>Nombre de Usuario de Acceso</label><input name="username" placeholder="Ej: admin_bosque" required></div>
+ <div class="field"><label>Contraseña de Acceso</label><input type="password" name="password" placeholder="Contraseña segura" required></div>
+ <div class="field"><label>Rol del Usuario</label>
+     <select name="rol">
+         <option value="admin">Administrador (Control total del conjunto)</option>
+         <option value="guarda">Guarda (Solo operación y cámaras)</option>
+     </select>
+ </div>
+ </div><button class="btn primary" style="margin-top:10px">Crear Conjunto y Credenciales</button></form></div></div>
 
  <div class="panel" style="margin-bottom:20px;"><div class="panelhead"><h2>Lista y Eliminación de Conjuntos</h2></div>
  <div style="overflow:auto"><table><thead><tr><th>ID</th><th>NOMBRE DEL CONJUNTO</th><th>ACCIÓN</th></tr></thead>
@@ -186,7 +193,7 @@ input,select { width:100%; padding:11px; border:1px solid #2b4560; border-radius
 
  <div class="panel"><div class="panelhead"><h2>Cambiar Contraseña de Administrador</h2></div><div class="body">
  <form id="fPassChange"><div class="formgrid">
- <div class="field"><label>Usuario Administrador</label><input id="cUser" placeholder="Ej: admin_1" required></div>
+ <div class="field"><label>Usuario Administrador</label><input id="cUser" placeholder="Ej: admin" required></div>
  <div class="field"><label>Contraseña Actual</label><input type="password" id="cActual" required></div>
  <div class="field"><label>Nueva Contraseña</label><input type="password" id="cNueva" required></div>
  </div><button class="btn primary" style="margin-top:10px">Actualizar Contraseña</button></form></div></div>
@@ -218,7 +225,7 @@ async function cargarTablaConjuntosAdmin() {
 }
 
 async function eliminarConjunto(id, nombre) {
-    const confirmacion = prompt(`⚠️ ADVERTENCIA: Vas a eliminar el conjunto "${nombre}" y todos sus datos (residentes, registros, usuarios).\n\nEscribe "ELIMINAR" para confirmar:`);
+    const confirmacion = prompt(`⚠️ ADVERTENCIA: Vas a eliminar el conjunto "${nombre}" y todos sus datos.\n\nEscribe "ELIMINAR" para confirmar:`);
     if (confirmacion !== "ELIMINAR") {
         alert("Operación cancelada.");
         return;
@@ -258,9 +265,12 @@ document.getElementById('fLogin').onsubmit = async (e) => {
         
         cargarTablaConjuntosAdmin();
         
+        // Bloqueo estricto de funciones de administrador si el rol es 'guarda'
+        const btnConjuntos = document.getElementById('navConjuntosBtn');
         if (rolUsuarioActual !== 'admin') {
-            const btnConjuntos = document.getElementById('navConjuntosBtn');
             if (btnConjuntos) btnConjuntos.style.display = 'none';
+        } else {
+            if (btnConjuntos) btnConjuntos.style.display = 'block';
         }
         
         inicializarCamaras();
@@ -336,7 +346,7 @@ function capturarRostro() {
 
 function go(id){
     if(id === 'conjuntos' && rolUsuarioActual !== 'admin') {
-        alert("Acceso denegado: Solo el Administrador general puede gestionar conjuntos.");
+        alert("Acceso denegado: Esta cuenta tiene restricciones de Guarda y no puede gestionar conjuntos.");
         return;
     }
     document.querySelectorAll(".view").forEach(x=>x.classList.remove("active"));
@@ -426,7 +436,7 @@ document.getElementById("fConjunto").onsubmit = async e => {
         e.target.reset();
         await cargarTablaConjuntosAdmin();
 
-        alert(`¡Conjunto "${resData.nombre}" creado con éxito!\n\nUsuario asignado: ${resData.username}\nContraseña: [La que ingresaste]\n\nYa puedes iniciar sesión con él.`);
+        alert(`¡Conjunto "${resData.nombre}" creado con éxito!\n\nUsuario asignado: ${resData.username}\nYa puedes iniciar sesión con él.`);
     } catch(err) { alert(err.message); }
 };
 

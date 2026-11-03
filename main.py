@@ -7,7 +7,7 @@ from typing import Optional
 import sqlite3
 import os
 
-app = FastAPI(title="SUPRENAMAR VIGÍA IA", version="2.7")
+app = FastAPI(title="SUPRENAMAR VIGÍA IA", version="2.8")
 
 BASE_DIR = Path(__file__).resolve().parent
 DB_PATH = BASE_DIR / "vigia.db"
@@ -132,7 +132,9 @@ class Domicilio(BaseModel):
 
 class ConjuntoNuevo(BaseModel):
     nombre: str
+    username: str
     password: str
+    rol: str = "admin" # Puede ser 'admin' o 'guarda'
 
 class UsuarioLogin(BaseModel):
     username: str
@@ -179,19 +181,22 @@ def crear_conjunto(d: ConjuntoNuevo):
     with conectar_db() as db:
         try:
             nombre_limpio = d.nombre.strip()
+            user_limpio = d.username.strip()
             password_limpia = d.password.strip()
-            if not password_limpia:
-                raise HTTPException(status_code=400, detail="La contraseña no puede estar vacía.")
+            rol_limpio = d.rol.strip()
+            
+            if not user_limpio or not password_limpia:
+                raise HTTPException(status_code=400, detail="El usuario y la contraseña son obligatorios.")
                 
             cur = db.execute("INSERT INTO conjuntos(nombre, creado_en) VALUES(?, datetime('now'))", (nombre_limpio,))
             conjunto_id = cur.lastrowid
             
             db.execute("INSERT INTO usuarios(username, password_hash, nombre_completo, rol, conjunto_id) VALUES(?, ?, ?, ?, ?)",
-                (f"admin_{conjunto_id}", password_limpia, f"Administrador {nombre_limpio}", "admin", conjunto_id))
+                (user_limpio, password_limpia, f"{rol_limpio.capitalize()} {nombre_limpio}", rol_limpio, conjunto_id))
             db.commit()
-            return {"id": conjunto_id, "nombre": nombre_limpio, "username": f"admin_{conjunto_id}"}
+            return {"id": conjunto_id, "nombre": nombre_limpio, "username": user_limpio}
         except sqlite3.IntegrityError:
-            raise HTTPException(status_code=400, detail="El conjunto ya existe.")
+            raise HTTPException(status_code=400, detail="El nombre de usuario o del conjunto ya existe. Elija otro.")
 
 @app.delete("/api/conjuntos/{conjunto_id}")
 def eliminar_conjunto(conjunto_id: int):
