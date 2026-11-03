@@ -5,14 +5,17 @@ from pathlib import Path
 from pydantic import BaseModel
 from typing import Optional
 import sqlite3
+import os
 
 app = FastAPI(title="SUPRENAMAR VIGÍA IA", version="2.1")
 
 BASE_DIR = Path(__file__).resolve().parent
 DB_PATH = BASE_DIR / "vigia.db"
 
-# Montar carpeta estática de forma segura
-app.mount("/static", StaticFiles(directory=str(BASE_DIR / "app" / "static")), name="static")
+# Montaje estático seguro para evitar errores en Render si la carpeta no existe
+STATIC_DIR = BASE_DIR / "app" / "static"
+if os.path.exists(STATIC_DIR):
+    app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 def conectar_db():
     conn = sqlite3.connect(DB_PATH)
