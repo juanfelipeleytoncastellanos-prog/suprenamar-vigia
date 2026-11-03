@@ -7,12 +7,11 @@ from typing import Optional
 import sqlite3
 import os
 
-app = FastAPI(title="SUPRENAMAR VIGÍA IA", version="2.1")
+app = FastAPI(title="SUPRENAMAR VIGÍA IA", version="2.3")
 
 BASE_DIR = Path(__file__).resolve().parent
 DB_PATH = BASE_DIR / "vigia.db"
 
-# Montaje estático seguro para evitar errores en Render si la carpeta no existe
 STATIC_DIR = BASE_DIR / "app" / "static"
 if os.path.exists(STATIC_DIR):
     app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
@@ -148,6 +147,10 @@ def validar_conjunto(db, conjunto_id: int):
 def read_index():
     return FileResponse(str(BASE_DIR / "app" / "templates" / "index.html"))
 
+@app.get("/residente")
+def read_residente_portal():
+    return FileResponse(str(BASE_DIR / "app" / "templates" / "residente.html"))
+
 @app.get("/manifest.json")
 def manifest():
     return {
@@ -170,12 +173,13 @@ def listar_conjuntos():
 def crear_conjunto(d: ConjuntoNuevo):
     with conectar_db() as db:
         try:
-            cur = db.execute("INSERT INTO conjuntos(nombre, creado_en) VALUES(?, datetime('now'))", (d.nombre.strip(),))
+            nombre_limpio = d.nombre.strip()
+            cur = db.execute("INSERT INTO conjuntos(nombre, creado_en) VALUES(?, datetime('now'))", (nombre_limpio,))
             conjunto_id = cur.lastrowid
             db.execute("INSERT INTO usuarios(username, password_hash, nombre_completo, rol, conjunto_id) VALUES(?, ?, ?, ?, ?)",
-                (f"admin_{conjunto_id}", "12345", f"Administrador {d.nombre.strip()}", "admin", conjunto_id))
+                (f"admin_{conjunto_id}", "12345", f"Administrador {nombre_limpio}", "admin", conjunto_id))
             db.commit()
-            return {"id": conjunto_id, "nombre": d.nombre.strip()}
+            return {"id": conjunto_id, "nombre": nombre_limpio}
         except sqlite3.IntegrityError:
             raise HTTPException(status_code=400, detail="El conjunto ya existe.")
 
@@ -199,12 +203,12 @@ def crear_residente(d: Residente, conjunto_id: int = 1):
     with conectar_db() as db:
         validar_conjunto(db, conjunto_id)
         cur = db.execute("INSERT INTO residentes(nombre,documento,torre,apto,placa,puesto,foto_rostro,creado_en,conjunto_id) VALUES(?,?,?,?,?,?,?,?,datetime('now'))",
-            (d.nombre.strip(), d.documento.strip(), d.torre, d.apto.strip(), d.placa.strip(), d.puesto.strip(), d.foto_rostro, conjunto_id))
+            (d.nombre.strip(), d.documento.strip(), d.torre, d.apto.strip(), d.placa.strip().upper(), d.puesto.strip(), d.foto_rostro, conjunto_id))
         db.commit()
         nuevo_id = cur.lastrowid
     
     with conectar_db() as db:
-        db.execute("INSERT INTO movimientos (hora, persona, tipo, evento, conjunto_id) VALUES (datetime('now', 'localtime'), ?, 'Residente', 'Registro biométrico facial guardado', ?)", (d.nombre.strip(), conjunto_id))
+        db.execute("INSERT INTO movimientos (hora, persona, tipo, evento, conjunto_id) VALUES (datetime('now', 'localtime'), ?, 'Residente', 'Registro biométrico, placa: ' || COALESCE(?, 'N/A') || ' - Puesto: ' || COALESCE(?, 'N/A'), ?)", (d.nombre.strip(), d.placa.strip().upper(), d.puesto.strip(), conjunto_id))
         db.commit()
         
     return {"id": nuevo_id, **d.model_dump(), "conjunto_id": conjunto_id}
@@ -221,7 +225,7 @@ def crear_visitante(d: Visitante, conjunto_id: int = 1):
     with conectar_db() as db:
         validar_conjunto(db, conjunto_id)
         db.execute("INSERT INTO visitantes(nombre,anfitrion,tipo,placa,hora,conjunto_id) VALUES(?,?,?,?,datetime('now', 'localtime'),?)",
-            (d.nombre.strip(), d.anfitrion, d.tipo, d.placa.strip(), conjunto_id))
+            (d.nombre.strip(), d.anfitrion, d.tipo, d.placa.strip().upper(), conjunto_id))
         db.commit()
     with conectar_db() as db:
         db.execute("INSERT INTO movimientos (hora, persona, tipo, evento, conjunto_id) VALUES (datetime('now', 'localtime'), ?, 'Visitante', 'Ingreso autorizado a ' || ?, ?)", (d.nombre.strip(), d.anfitrion, conjunto_id))
@@ -233,7 +237,7 @@ def crear_domicilio(d: Domicilio, conjunto_id: int = 1):
     with conectar_db() as db:
         validar_conjunto(db, conjunto_id)
         db.execute("INSERT INTO domicilios(nombre,empresa,torre,apto,placa,hora,conjunto_id) VALUES(?,?,?,?,?,datetime('now', 'localtime'),?)",
-            (d.nombre.strip(), d.empresa.strip(), d.torre, d.apto.strip(), d.placa.strip(), conjunto_id))
+            (d.nombre.strip(), d.empresa.strip(), d.torre, d.apto.strip(), d.placa.strip().upper(), conjunto_id))
         db.commit()
     with conectar_db() as db:
         db.execute("INSERT INTO movimientos (hora, persona, tipo, evento, conjunto_id) VALUES (datetime('now', 'localtime'), ?, 'Domiciliario', 'Ruta autorizada Torre ' || ?, ?)", (d.nombre.strip(), d.torre, conjunto_id))

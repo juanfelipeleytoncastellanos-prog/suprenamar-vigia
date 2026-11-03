@@ -51,7 +51,6 @@ input,select { width:100%; padding:11px; border:1px solid #2b4560; border-radius
 </head>
 <body>
 
-<!-- Fondo completamente sólido y opaco (#07111f) para evitar transparencias -->
 <div id="loginScreen" style="position:fixed;top:0;left:0;width:100%;height:100%;background:#07111f;z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;">
     <div class="panel" style="width:100%;max-width:400px;padding:35px;border-color:var(--azul);box-shadow: 0 0 40px rgba(77,182,255,0.2);text-align:center;background:#101f33;">
         <img src="/static/logo.png" onerror="this.style.display='none'" style="width:90px;height:90px;object-fit:contain;margin-bottom:10px;filter:drop-shadow(0 0 10px rgba(255,200,87,0.5))">
@@ -68,7 +67,11 @@ input,select { width:100%; padding:11px; border:1px solid #2b4560; border-radius
             <button type="submit" class="btn primary" style="width:100%;margin-top:22px;font-size:14px;padding:12px;">Iniciar Turno Segurizado</button>
         </form>
 
-        <div style="margin-top:18px; border-top:1px solid var(--borde); padding-top:12px;">
+        <div style="margin-top:15px; text-align:center;">
+            <a href="/residente" style="color:var(--amarillo); font-size:11px; text-decoration:underline;">¿Eres Residente? Haz clic aquí para registrar tu rostro, placa y parqueadero</a>
+        </div>
+
+        <div style="margin-top:15px; border-top:1px solid var(--borde); padding-top:12px;">
             <button id="installAppBtn" class="btn" style="width:100%; background:#091625; border-color:var(--amarillo); color:var(--amarillo); display:none;">Instalar Aplicación de Escritorio</button>
         </div>
     </div>
@@ -86,7 +89,7 @@ input,select { width:100%; padding:11px; border:1px solid #2b4560; border-radius
   <button data-page="residentes"><span>♙</span>Residentes & Biometría</button>
   <button data-page="visitantes"><span>♧</span>Acceso Peatonal</button>
   <button data-page="domicilios"><span>▤</span>Domiciliarios</button>
-  <button data-page="conjuntos"><span>⚙</span>Gestión de Conjuntos</button>
+  <button data-page="conjuntos" id="navConjuntosBtn"><span>⚙</span>Gestión de Conjuntos</button>
  </nav>
 </aside>
 <main>
@@ -124,15 +127,15 @@ input,select { width:100%; padding:11px; border:1px solid #2b4560; border-radius
 </section>
 
 <section class="view" id="residentes">
- <div class="heading"><div><h1>Base de Datos: Residentes & Biometría</h1><div class="sub">Captura facial, placas y asignación por torre y apartamento.</div></div></div>
+ <div class="heading"><div><h1>Base de Datos: Residentes & Biometría</h1><div class="sub">Captura facial, placas de vehículos, parqueaderos y asignación por torre y apartamento.</div></div></div>
  <div class="panel"><div class="panelhead"><h2>Nuevo Registro de Residente</h2></div><div class="body">
  <form id="fRes"><div class="formgrid">
  <div class="field"><label>Nombre Completo</label><input name="nombre" required></div>
  <div class="field"><label>Documento de Identidad</label><input name="documento"></div>
  <div class="field"><label>Torre</label><input name="torre" required></div>
  <div class="field"><label>Apartamento</label><input name="apto" required></div>
- <div class="field"><label>Placa Vehículo</label><input name="placa"></div>
- <div class="field"><label>Puesto de Parqueo</label><input name="puesto"></div>
+ <div class="field"><label>Placa Vehículo (Carro / Moto)</label><input name="placa" placeholder="Ej: ABC-123"></div>
+ <div class="field"><label>Número de Parqueo Asignado</label><input name="puesto" placeholder="Ej: P-45"></div>
  </div>
  
  <div style="margin-top:20px; border-top:1px solid var(--borde); padding-top:15px;">
@@ -152,7 +155,7 @@ input,select { width:100%; padding:11px; border:1px solid #2b4560; border-radius
  <button class="btn primary" style="margin-top:20px; width:100%;">Guardar y Registrar Residente</button></form></div></div>
 
  <div class="panel" style="margin-top:20px;"><div class="panelhead"><h2>Residentes Registrados en este Conjunto</h2></div>
- <div style="overflow:auto"><table><thead><tr><th>FOTO</th><th>NOMBRE</th><th>TORRE / APTO</th><th>PLACA</th><th>DOCUMENTO</th></tr></thead>
+ <div style="overflow:auto"><table><thead><tr><th>FOTO</th><th>NOMBRE</th><th>TORRE / APTO</th><th>PLACA VEHÍCULO</th><th>PARQUEADERO</th></tr></thead>
  <tbody id="tablaResidentes"><tr><td colspan="5" class="empty">Cargando residentes...</td></tr></tbody></table></div></div>
 </section>
 
@@ -162,7 +165,8 @@ input,select { width:100%; padding:11px; border:1px solid #2b4560; border-radius
  <form id="fVis"><div class="formgrid">
  <div class="field"><label>Visitante</label><input name="nombre" required></div>
  <div class="field"><label>Residente que autoriza</label><select name="anfitrion" id="anfitrion" required><option value="">Cargando residentes...</option></select></div>
- </div><button class="btn primary" style="margin-top:10px">Abrir Torniquete</button></form></div></div>
+ <div class="field"><label>Placa Vehículo Visitante (Opcional)</label><input name="placa" placeholder="Ej: XYZ-789"></div>
+ </div><button class="btn primary" style="margin-top:10px">Abrir Torniquete / Barrera</button></form></div></div>
 </section>
 
 <section class="view" id="domicilios">
@@ -173,6 +177,7 @@ input,select { width:100%; padding:11px; border:1px solid #2b4560; border-radius
  <div class="field"><label>Empresa</label><input name="empresa" required placeholder="Ej: Rappi / Inter Rapidísimo"></div>
  <div class="field"><label>Torre Destino</label><input name="torre" required></div>
  <div class="field"><label>Apartamento</label><input name="apto" required></div>
+ <div class="field"><label>Placa Moto / Vehículo</label><input name="placa" placeholder="Ej: MOTO-01"></div>
  </div><button class="btn primary" style="margin-top:10px">Autorizar Ruta Domiciliario</button></form></div></div>
 </section>
 
@@ -187,6 +192,7 @@ input,select { width:100%; padding:11px; border:1px solid #2b4560; border-radius
 </div></main></div>
 <script>
 let conjuntoActualId = 1;
+let rolUsuarioActual = '';
 let deferredPrompt;
 let localStream = null;
 
@@ -242,24 +248,18 @@ document.getElementById('fLogin').onsubmit = async (e) => {
         const data = await r.json();
         
         conjuntoActualId = data.conjunto_id;
+        rolUsuarioActual = data.rol;
         document.getElementById('loginScreen').style.display = 'none';
-        document.getElementById('guardName').textContent = data.nombre.toUpperCase();
+        document.getElementById('guardName').textContent = `${data.nombre.toUpperCase()} (${data.rol.toUpperCase()})`;
         
         await cargarConjuntosHeader();
         
-        if (!esAppEscritorio) {
-            document.getElementById('navCamarasBtn').style.display = 'none';
-            document.getElementById('panelCamarasWeb').innerHTML = `
-                <div class="panelhead"><h2>Acceso Restringido</h2></div>
-                <div class="body" style="text-align:center; padding:40px; color:var(--rojo);">
-                    <b>El Circuito Cerrado y las Cámaras en Vivo solo están disponibles desde la Aplicación de Escritorio instalada.</b>
-                    <p style="color:var(--suave); font-size:12px; margin-top:10px;">Por favor, instala la app en tu PC desde el portal de bienvenida para acceder a las transmisiones de video.</p>
-                </div>
-            `;
-        } else {
-            inicializarCamaras();
+        if (rolUsuarioActual !== 'admin') {
+            const btnConjuntos = document.getElementById('navConjuntosBtn');
+            if (btnConjuntos) btnConjuntos.style.display = 'none';
         }
 
+        inicializarCamaras();
         recargar();
     } catch(err) { alert(err.message); }
 };
@@ -335,8 +335,8 @@ function capturarRostro() {
 }
 
 function go(id){
-    if(id === 'camaras' && !esAppEscritorio) {
-        alert("Acceso denegado: El circuito cerrado de cámaras solo está disponible en la aplicación instalada.");
+    if(id === 'conjuntos' && rolUsuarioActual !== 'admin') {
+        alert("Acceso denegado: Solo el Administrador general puede gestionar conjuntos.");
         return;
     }
     document.querySelectorAll(".view").forEach(x=>x.classList.remove("active"));
@@ -370,8 +370,8 @@ async function recargar(){
                     <td>${r.foto_rostro ? `<img src="${r.foto_rostro}" style="width:35px; height:35px; border-radius:50%; object-fit:cover;">` : 'Sin foto'}</td>
                     <td><b>${r.nombre}</b></td>
                     <td>Torre ${r.torre} - Apto ${r.apto}</td>
-                    <td>${r.placa || 'N/A'}</td>
-                    <td>${r.documento || 'N/A'}</td>
+                    <td><span style="background:#14345a; padding:3px 8px; border-radius:4px; color:var(--amarillo); font-weight:bold;">${r.placa || 'Sin Vehículo'}</span></td>
+                    <td><span style="background:#092212; padding:3px 8px; border-radius:4px; color:var(--verde); font-weight:bold;">${r.puesto || 'Sin Asignar'}</span></td>
                 </tr>
             `).join("") : '<tr><td colspan="5" class="empty">No hay residentes registrados en este conjunto.</td></tr>';
         }
@@ -386,7 +386,7 @@ document.getElementById("fRes").onsubmit = async e => {
         document.getElementById('fotoRostroInput').value = "";
         document.getElementById('previewRostro').innerHTML = "Sin foto";
         recargar();
-        alert("Residente y biometría guardados exitosamente");
+        alert("Residente, biometría, placa y parqueadero guardados exitosamente");
     } catch(err){alert(err.message);}
 };
 
@@ -396,7 +396,7 @@ document.getElementById("fVis").onsubmit = async e => {
         await api("/api/visitantes",{method:"POST",body:JSON.stringify(Object.fromEntries(new FormData(e.target)))});
         e.target.reset();
         recargar();
-        alert("Acceso peatonal autorizado");
+        alert("Acceso peatonal / vehicular autorizado");
     } catch(err){alert(err.message);}
 };
 
