@@ -1,5 +1,4 @@
 from fastapi import FastAPI, HTTPException, Depends
-from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, FileResponse
 from pathlib import Path
 from pydantic import BaseModel
@@ -10,8 +9,6 @@ app = FastAPI(title="SUPRENAMAR VIGÍA IA", version="2.1")
 
 BASE_DIR = Path(__file__).resolve().parent
 DB_PATH = BASE_DIR / "vigia.db"
-
-app.mount("/static", StaticFiles(directory=str(BASE_DIR / "app" / "static")), name="static")
 
 def conectar_db():
     conn = sqlite3.connect(DB_PATH)
@@ -153,7 +150,7 @@ def manifest():
         "display": "standalone",
         "background_color": "#07111f",
         "theme_color": "#0a1727",
-        "icons": [{"src": "/static/logo.png", "sizes": "192x192", "type": "image/png"}]
+        "icons": []
     }
 
 @app.get("/api/conjuntos")
