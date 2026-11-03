@@ -27,9 +27,7 @@ main > .content { max-width:1550px; margin:auto; padding:25px }
 h1 { font-size:27px; margin:0 } h2 { font-size:15px; margin:0 } .sub { color:var(--suave); font-size:12px; margin-top:7px }
 .btn { background:#142943; border:1px solid #31506f; padding:10px 13px; border-radius:8px; font-size:12px }
 .primary { background:#167ec5; border-color:#3d9fe8 }
-.cards { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:13px; margin-bottom:18px }
-.card,.panel { background:var(--panel); border:1px solid var(--borde); border-radius:12px; overflow:hidden }
-.card { padding:17px } .card small { color:var(--suave) } .num { font-size:29px; font-weight:800; margin:12px 0 5px }
+.panel { background:var(--panel); border:1px solid var(--borde); border-radius:12px; overflow:hidden }
 .panelhead { display:flex; align-items:center; justify-content:space-between; padding:15px 17px; border-bottom:1px solid var(--borde); gap:10px }
 .body { padding:16px }
 .twocol { display:grid; grid-template-columns:1.15fr 1fr; gap:16px; margin-bottom:17px }
@@ -62,13 +60,13 @@ input,select { width:100%; padding:11px; border:1px solid #2b4560; border-radius
                 <label>Seleccionar Conjunto</label>
                 <select id="lConjunto" required style="margin-bottom:12px;"><option value="">Cargando conjuntos...</option></select>
             </div>
-            <div class="field"><label>Usuario</label><input id="lUser" placeholder="Ej: admin" required></div>
+            <div class="field"><label>Usuario</label><input id="lUser" placeholder="Ej: admin o guarda" required></div>
             <div class="field" style="margin-top:12px"><label>Contraseña</label><input type="password" id="lPass" placeholder="Contraseña de acceso" required></div>
             <button type="submit" class="btn primary" style="width:100%;margin-top:22px;font-size:14px;padding:12px;">Iniciar Turno Segurizado</button>
         </form>
 
         <div style="margin-top:15px; text-align:center;">
-            <a href="/residente" style="color:var(--amarillo); font-size:11px; text-decoration:underline;">¿Eres Residente? Haz clic aquí para registrar tu rostro, placa y parqueadero</a>
+            <a href="/residente" style="color:var(--amarillo); font-size:11px; text-decoration:underline;">¿Eres Residente? Haz clic aquí para registrar tu rostro, vehículo y parqueadero</a>
         </div>
 
         <div style="margin-top:15px; border-top:1px solid var(--borde); padding-top:12px;">
@@ -113,10 +111,10 @@ input,select { width:100%; padding:11px; border:1px solid #2b4560; border-radius
    </div>
   </div>
   
-  <div class="panel" id="panelCamarasWeb"><div class="panelhead"><h2>Vistas Cámaras Principales</h2><small id="estadoAccesoCams">Transmisión Directa</small></div>
+  <div class="panel" id="panelCamarasWeb"><div class="panelhead"><h2>Vistas Cámaras Principales</h2><small>Transmisión Directa</small></div>
    <div class="body"><div class="cameras" id="cams"></div></div></div>
  </div>
- <div class="panel"><div class="panelhead"><h2>Movimientos recientes (Torniquete/Barrera)</h2></div>
+ <div class="panel"><div class="panelhead"><h2>Movimientos recientes (Torniquete / Barrera LPR)</h2></div>
  <div style="overflow:auto"><table><thead><tr><th>HORA</th><th>PERSONA / PLACA</th><th>TIPO</th><th>EVENTO</th></tr></thead>
  <tbody id="movs"><tr><td colspan="4" class="empty">No hay movimientos.</td></tr></tbody></table></div></div>
 </section>
@@ -127,14 +125,14 @@ input,select { width:100%; padding:11px; border:1px solid #2b4560; border-radius
 </section>
 
 <section class="view" id="residentes">
- <div class="heading"><div><h1>Base de Datos: Residentes & Biometría</h1><div class="sub">Captura facial, placas de vehículos, parqueaderos y asignación por torre y apartamento.</div></div></div>
+ <div class="heading"><div><h1>Base de Datos: Residentes, Vehículos & Parqueaderos</h1><div class="sub">Captura facial, placas de vehículos y número de puesto asignado.</div></div></div>
  <div class="panel"><div class="panelhead"><h2>Nuevo Registro de Residente</h2></div><div class="body">
  <form id="fRes"><div class="formgrid">
  <div class="field"><label>Nombre Completo</label><input name="nombre" required></div>
  <div class="field"><label>Documento de Identidad</label><input name="documento"></div>
  <div class="field"><label>Torre</label><input name="torre" required></div>
  <div class="field"><label>Apartamento</label><input name="apto" required></div>
- <div class="field"><label>Placa Vehículo (Carro / Moto)</label><input name="placa" placeholder="Ej: ABC-123"></div>
+ <div class="field"><label>Placa del Vehículo (Carro / Moto)</label><input name="placa" placeholder="Ej: ABC-123"></div>
  <div class="field"><label>Número de Parqueo Asignado</label><input name="puesto" placeholder="Ej: P-45"></div>
  </div>
  
@@ -152,20 +150,20 @@ input,select { width:100%; padding:11px; border:1px solid #2b4560; border-radius
  </div>
  <input type="hidden" name="foto_rostro" id="fotoRostroInput">
 
- <button class="btn primary" style="margin-top:20px; width:100%;">Guardar y Registrar Residente</button></form></div></div>
+ <button class="btn primary" style="margin-top:20px; width:100%;">Guardar Residente</button></form></div></div>
 
- <div class="panel" style="margin-top:20px;"><div class="panelhead"><h2>Residentes Registrados en este Conjunto</h2></div>
+ <div class="panel" style="margin-top:20px;"><div class="panelhead"><h2>Residentes y Vehículos Registrados</h2></div>
  <div style="overflow:auto"><table><thead><tr><th>FOTO</th><th>NOMBRE</th><th>TORRE / APTO</th><th>PLACA VEHÍCULO</th><th>PARQUEADERO</th></tr></thead>
  <tbody id="tablaResidentes"><tr><td colspan="5" class="empty">Cargando residentes...</td></tr></tbody></table></div></div>
 </section>
 
 <section class="view" id="visitantes">
- <div class="heading"><div><h1>Acceso Peatonal y Visitantes</h1></div></div>
+ <div class="heading"><div><h1>Acceso Peatonal y Visitantes con Vehículo</h1></div></div>
  <div class="panel"><div class="panelhead"><h2>Autorizar Entrada</h2></div><div class="body">
  <form id="fVis"><div class="formgrid">
- <div class="field"><label>Visitante</label><input name="nombre" required></div>
+ <div class="field"><label>Nombre Visitante</label><input name="nombre" required></div>
  <div class="field"><label>Residente que autoriza</label><select name="anfitrion" id="anfitrion" required><option value="">Cargando residentes...</option></select></div>
- <div class="field"><label>Placa Vehículo Visitante (Opcional)</label><input name="placa" placeholder="Ej: XYZ-789"></div>
+ <div class="field"><label>Placa del Visitante (Opcional)</label><input name="placa" placeholder="Ej: XYZ-789"></div>
  </div><button class="btn primary" style="margin-top:10px">Abrir Torniquete / Barrera</button></form></div></div>
 </section>
 
@@ -182,7 +180,7 @@ input,select { width:100%; padding:11px; border:1px solid #2b4560; border-radius
 </section>
 
 <section class="view" id="conjuntos">
- <div class="heading"><div><h1>Gestión de Conjuntos Residenciales</h1><div class="sub">Crea nuevos conjuntos. Cada uno generará automáticamente su propio acceso con contraseña independiente.</div></div></div>
+ <div class="heading"><div><h1>Gestión de Conjuntos Residenciales</h1><div class="sub">Área exclusiva del Administrador General para crear y configurar nuevos conjuntos residenciales.</div></div></div>
  <div class="panel" style="margin-bottom:20px;"><div class="panelhead"><h2>Registrar Nuevo Conjunto</h2></div><div class="body">
  <form id="fConjunto"><div class="formgrid">
  <div class="field"><label>Nombre del Conjunto Residencial</label><input name="nombre" placeholder="Ej: Conjunto Reservas del Bosque" required></div>
@@ -254,11 +252,12 @@ document.getElementById('fLogin').onsubmit = async (e) => {
         
         await cargarConjuntosHeader();
         
+        // Ocultar gestión de conjuntos si no es admin, pero PERMITIR cámaras al guarda
         if (rolUsuarioActual !== 'admin') {
             const btnConjuntos = document.getElementById('navConjuntosBtn');
             if (btnConjuntos) btnConjuntos.style.display = 'none';
         }
-
+        
         inicializarCamaras();
         recargar();
     } catch(err) { alert(err.message); }
