@@ -462,4 +462,9 @@ document.getElementById("fPassChange").onsubmit = async e => {
         }
         alert("¡Contraseña actualizada correctamente!");
         e.target.reset();
-        document.getElementById('cUser').value
+        document.getElementById('cUser').value = usernameActual;
+    } catch(err) { alert(err.message); }
+};
+</script>
+</body>
+</html>
